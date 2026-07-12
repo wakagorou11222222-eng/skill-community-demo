@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>業務登録 — Skill Community デモ</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.383.0/umd/lucide.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<style>
+  body { font-family: "Yu Gothic UI","Noto Sans JP",sans-serif; }
+  .back-bar { background:#fff; border-bottom:1px solid #DFE5EE; padding:10px 24px; }
+  .back-btn { display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+    background:#EEF2F7; border-radius:8px; padding:7px 12px; font-size:12px;
+    font-weight:700; color:#1B2A6B; }
+  .back-btn:hover { background:#dce7f7; }
+</style>
+</head>
+<body class="bg-gray-50">
+
+<div class="back-bar">
+  <a href="index.html" class="back-btn">← トップへ戻る</a>
+</div>
+
+<div id="root"></div>
+
+<script type="text/babel">
+const { useMemo, useState } = React;
+
+// lucide icons from UMD
+const makeIcon = (name) => {
+  const icons = lucide;
+  return ({ size = 24, className = "" }) => {
+    const el = icons[name];
+    if (!el) return null;
+    const [tag, attrs, children] = el;
+    const svgAttrs = {
+      ...attrs,
+      width: size, height: size,
+      className,
+      style: { display: "inline-block", verticalAlign: "middle" }
+    };
+    const renderChildren = (ch) => ch.map(([t, a, c], i) =>
+      React.createElement(t, { ...a, key: i }, c ? renderChildren(c) : null)
+    );
+    return React.createElement("svg", svgAttrs, children ? renderChildren(children) : null);
+  };
+};
+
+const Activity = makeIcon("Activity");
+const ArrowRight = makeIcon("ArrowRight");
+const BarChart3 = makeIcon("BarChart3");
+const BrainCircuit = makeIcon("BrainCircuit");
+const Building2 = makeIcon("Building2");
+const Check = makeIcon("Check");
+const CheckCircle2 = makeIcon("CheckCircle2");
+const ClipboardCheck = makeIcon("ClipboardCheck");
+const Download = makeIcon("Download");
+const Eye = makeIcon("Eye");
+const FileCheck2 = makeIcon("FileCheck2");
+const History = makeIcon("History");
+const Info = makeIcon("Info");
+const ListFilter = makeIcon("ListFilter");
+const Lock = makeIcon("Lock");
+const Send = makeIcon("Send");
+const ShieldCheck = makeIcon("ShieldCheck");
+const Sparkles = makeIcon("Sparkles");
+const Upload = makeIcon("Upload");
+const UserCog = makeIcon("UserCog");
+
+const ROLE_OPTIONS = [
+  { value: "receiver", label: "業務担当者" },
+  { value: "receiver_boss", label: "受入側責任者" },
+  { value: "sender", label: "参加側責任者" },
+  { value: "participant", label: "参加者" },
+];
+
+const ROLE_GUIDANCE = {
+  receiver: { title: "業務担当者として操作中", text: "業務内容・成果物を登録し、提出された成果物の完了確認まで行います。" },
+  receiver_boss: { title: "受入側責任者として操作中", text: "登録された業務内容を確認し、参加側責任者へ共有できる形に整えます。" },
+  sender: { title: "参加側責任者として操作中", text: "参加可否、担当範囲、進め方を確認し、参加者へ確認します。" },
+  participant: { title: "参加者として操作中", text: "担当範囲と成果物を確認し、参加可否を回答します。" },
+};
+
+const INFO_CLASSES = ["一般共有可", "社内限定", "社外秘相当", "要マスキング"];
+const INFO_POLICY = {
+  "一般共有可": { title: "通常表示", text: "業務概要・成果物をそのまま候補チーム確認に利用します。" },
+  "社内限定": { title: "社外表示を抑制", text: "社外の参加者には、要約された業務概要と成果物だけを表示します。" },
+  "社外秘相当": { title: "匿名・要約表示", text: "候補チーム確認では、会社名・詳細情報を伏せ、必要スキル中心に表示します。" },
+  "要マスキング": { title: "詳細非表示", text: "添付資料や固有名詞は伏せ、責任者確認後に必要範囲だけ共有します。" },
+};
+
+const TAB_GUIDANCE = {
+  input: "業務内容を入力すると、AIがタスク・必要スキル・成果物候補に分解します。",
+  match: "業務内容・必要スキル・成果物との相性から、参加確認に進めるチーム案を選びます。",
+  route: "参加確認、進め方確認、成果物提出、完了確認までを責任者経由で進めます。",
+  outcome: "参加者本人は、現状スキルと目標キャリアの差分から、教材リンクと実務参加申請へ進み、完了後に再度この画面で到達度を確認します。",
+};
+
+const JOB_TEMPLATES = {
+  custom: { label:"自由入力", title:"", description:"", desired:"", deliverables:"",
+    tasks:[{name:"業務内容の整理",output:"業務整理メモ",diff:"中",progress:0},{name:"必要情報の確認",output:"確認項目一覧",diff:"中",progress:0},{name:"成果物案の作成",output:"成果物ドラフト",diff:"中",progress:0},{name:"振り返り・改善提案",output:"改善提案メモ",diff:"低",progress:0}],
+    skills:[{name:"業務整理",level:"Lv3"},{name:"資料化",level:"Lv3"},{name:"ヒアリング",level:"Lv2"},{name:"改善提案",level:"Lv2"},{name:"関係者調整",level:"Lv2"},{name:"要点整理",level:"Lv3"}],
+    roleNeeds:["業務を整理する人","関係者に確認する人","成果物を文章化する人"],learning:["業務整理","ヒアリング","資料作成"]},
+  issue: { label:"課題整理・相談導線", title:"事業者向け相談導線の整理",
+    description:"利用者や関係者から寄せられる相談内容を分類し、相談責任者・支援制度・外部連携先を整理したい。現状は相談内容が属人的に蓄積されており、初回対応や引き継ぎに時間がかかっている。",
+    desired:"業務整理、ヒアリング設計、利用者視点、分かりやすい資料化ができる人。",
+    deliverables:"相談分類表、初回ヒアリング項目、支援制度一覧、改善提案レポート",
+    tasks:[{name:"相談内容の棚卸し",output:"相談分類表",diff:"中",progress:90},{name:"初回ヒアリング項目の整理",output:"ヒアリングシート",diff:"中",progress:70},{name:"支援制度・連携先の整理",output:"制度一覧",diff:"中",progress:45},{name:"改善提案レポート作成",output:"改善提案書",diff:"高",progress:0}],
+    skills:[{name:"業務整理",level:"Lv3"},{name:"ヒアリング設計",level:"Lv3"},{name:"利用者視点",level:"Lv2"},{name:"資料化",level:"Lv3"},{name:"支援制度整理",level:"Lv2"},{name:"改善提案",level:"Lv2"}],
+    roleNeeds:["課題を整理する人","現場に確認する人","支援制度を調べる人","レポートにまとめる人"],learning:["課題ヒアリング","業務可視化","改善提案"]},
+  qa: { label:"QA・業務標準化", title:"テスト観点表の標準化とレビュー手順整理",
+    description:"複数案件で使われているテスト観点表の粒度を揃え、レビュー時の確認項目を標準化したい。属人化しているチェック観点を整理し、新規メンバーでも使いやすい形にしたい。",
+    desired:"QA、テスト設計、レビュー設計、業務標準化、ドキュメント整備に強い人。",
+    deliverables:"テスト観点テンプレート、レビュー観点一覧、運用手順書、改善提案レポート",
+    tasks:[{name:"既存観点表の比較",output:"差分整理表",diff:"中",progress:80},{name:"標準テンプレート作成",output:"観点表テンプレート",diff:"高",progress:55},{name:"レビュー手順の整理",output:"レビュー手順書",diff:"中",progress:30},{name:"試用結果の振り返り",output:"改善レポート",diff:"中",progress:0}],
+    skills:[{name:"QA",level:"Lv3"},{name:"テスト設計",level:"Lv3"},{name:"レビュー設計",level:"Lv3"},{name:"標準化",level:"Lv2"},{name:"ドキュメント整備",level:"Lv2"},{name:"品質観点整理",level:"Lv3"}],
+    roleNeeds:["既存資料を比較する人","テンプレートを作る人","レビュー観点を整理する人"],learning:["テスト設計レビュー","品質管理","業務標準化"]},
+  knowledge: { label:"社内ナレッジ整理", title:"FAQ・問い合わせ対応ナレッジの整理",
+    description:"問い合わせ履歴を分類し、FAQと一次対応フローを整備したい。対応品質を揃え、引き継ぎや新人対応の負担を下げたい。",
+    desired:"問い合わせ分析、FAQ作成、社内SaaS運用、読みやすい文書作成に強い人。",
+    deliverables:"問い合わせ分類表、FAQ案、一次対応フロー、改善レポート",
+    tasks:[{name:"問い合わせ履歴の分類",output:"分類表",diff:"中",progress:100},{name:"FAQ構成の再設計",output:"FAQ構成案",diff:"中",progress:65},{name:"一次対応フロー作成",output:"対応フロー",diff:"中",progress:20},{name:"改善レポート作成",output:"改善レポート",diff:"低",progress:0}],
+    skills:[{name:"問い合わせ分析",level:"Lv3"},{name:"FAQ作成",level:"Lv3"},{name:"SaaS運用",level:"Lv2"},{name:"文書作成",level:"Lv3"},{name:"ナレッジ管理",level:"Lv2"},{name:"一次対応設計",level:"Lv2"}],
+    roleNeeds:["問い合わせを分類する人","FAQを書く人","運用フローを作る人"],learning:["ナレッジ管理","ヘルプデスク運用","FAQ改善"]},
+};
+
+const CASE_META = {
+  custom:{category:"自由設計案件",collaboration:"成果物ベース",flow:"資料確認と成果物提出を中心に進行"},
+  issue:{category:"自治体・地域課題",collaboration:"成果物ベース",flow:"相談内容の整理、確認項目、改善提案を成果物として整理"},
+  qa:{category:"企業課題",collaboration:"成果物ベース",flow:"既存資料の確認、標準テンプレート、レビュー手順を成果物として整理"},
+  knowledge:{category:"社内課題",collaboration:"成果物ベース",flow:"問い合わせ分類、FAQ、一次対応フローを成果物として整理"},
+};
+
+const SENDER_ORG = "参加企業A";
+const PARTICIPANTS = [
+  {id:"P01",realName:"佐藤 健一",anonymousName:"参加者ID：SC-104",org:"自社部門",orgType:"社内",window:"自社部門 責任者",role:"業務整理",avail:"一部参加可",skills:["業務整理","資料化","ヒアリング設計","FAQ作成"]},
+  {id:"P02",realName:"田中 美咲",anonymousName:"参加者ID：SC-221",org:"参加企業A",orgType:"参加企業",window:"参加企業A 責任者",role:"QA/標準化",avail:"週数時間可",skills:["QA","テスト設計","レビュー設計","標準化"]},
+  {id:"P03",realName:"小林 直樹",anonymousName:"参加者ID：SC-318",org:"自治体A",orgType:"公共・地域知見",window:"公共・地域領域 責任者",role:"地域課題整理",avail:"スポット参加可",skills:["行政DX","地域課題整理","公共サービス理解","ヒアリング","資料化"]},
+  {id:"P04",realName:"山本 里奈",anonymousName:"参加者ID：SC-417",org:"参加企業B",orgType:"参加企業",window:"参加企業B 責任者",role:"学習接続",avail:"一部参加可",skills:["資料要約","学習支援","業務設計","振り返り設計"]},
+  {id:"P05",realName:"鈴木 大輔",anonymousName:"参加者ID：SC-552",org:"参加企業C",orgType:"参加企業",window:"参加企業C 責任者",role:"業務改善",avail:"月10時間程度",skills:["業務改善","効果測定","レポート作成","SaaS運用"]},
+];
+
+const TEAM_BLUEPRINTS_BY_TEMPLATE = {
+  custom:[{id:"A",name:"Aチーム：業務整理・資料化チーム",memberIds:["P01","P03","P05"],tags:["業務整理","ヒアリング","資料化"],reason:"業務の棚卸し、関係者確認、成果物レポート化までを一気通貫で進めやすい組み合わせです。",bestFor:"業務整理・初期設計"},{id:"B",name:"Bチーム：標準化・レビュー設計チーム",memberIds:["P02","P01","P05"],tags:["標準化","レビュー","改善"],reason:"入力された業務を標準手順・確認観点・改善レポートに落とし込む組み合わせです。",bestFor:"標準化・レビュー"},{id:"C",name:"Cチーム：学習接続・実務化チーム",memberIds:["P04","P01","P03"],tags:["学習接続","資料要約","実務タスク化"],reason:"業務を小さな実務タスクに分け、振り返りと学習テーマにつなげる組み合わせです。",bestFor:"学習成果の実務接続"}],
+  issue:[{id:"A",name:"Aチーム：課題整理・相談導線チーム",memberIds:["P03","P01","P05"],tags:["課題整理","ヒアリング","相談分類"],reason:"地域課題や相談内容を棚卸しし、初回ヒアリング項目・支援制度・連携先の整理まで進めやすい組み合わせです。",bestFor:"相談導線の整理"},{id:"B",name:"Bチーム：制度整理・資料化チーム",memberIds:["P01","P03","P04"],tags:["制度整理","資料化","利用者視点"],reason:"相談内容を利用者目線で整理し、支援制度一覧や説明資料に落とし込む組み合わせです。",bestFor:"制度・資料整理"},{id:"C",name:"Cチーム：改善提案・効果整理チーム",memberIds:["P05","P01","P03"],tags:["改善提案","効果測定","関係者調整"],reason:"相談導線を整理した後に、改善施策・運用負荷・効果測定までまとめる組み合わせです。",bestFor:"改善提案"}],
+  qa:[{id:"A",name:"Aチーム：QA標準化・レビュー設計チーム",memberIds:["P02","P05","P01"],tags:["QA","テスト設計","レビュー"],reason:"テスト観点表やレビュー手順を標準化するための組み合わせです。",bestFor:"QA・標準化"},{id:"B",name:"Bチーム：観点表テンプレート作成チーム",memberIds:["P02","P01","P04"],tags:["観点整理","テンプレート","文書化"],reason:"QA担当の知見を、誰でも使える観点表テンプレートや運用手順に変換する組み合わせです。",bestFor:"テンプレート化"},{id:"C",name:"Cチーム：試用・改善レポートチーム",memberIds:["P02","P05","P03"],tags:["試用結果","改善","レポート"],reason:"標準化した手順を試用し、改善点や運用上の注意点をレポート化する組み合わせです。",bestFor:"試用・改善"}],
+  knowledge:[{id:"A",name:"Aチーム：FAQ・一次対応整理チーム",memberIds:["P01","P05","P04"],tags:["FAQ","一次対応","ナレッジ管理"],reason:"問い合わせ履歴を分類し、FAQ案と一次対応フローを整備する組み合わせです。",bestFor:"FAQ・一次対応"},{id:"B",name:"Bチーム：問い合わせ分類・文書化チーム",memberIds:["P04","P01","P03"],tags:["問い合わせ分類","文書作成","利用者視点"],reason:"問い合わせ内容を読み手目線で分類し、分かりやすいナレッジ文書に変換する組み合わせです。",bestFor:"分類・文書化"},{id:"C",name:"Cチーム：運用改善・効果測定チーム",memberIds:["P05","P01","P02"],tags:["SaaS運用","効果測定","標準化"],reason:"FAQや一次対応フローを運用に乗せ、改善サイクルや効果測定まで設計する組み合わせです。",bestFor:"運用改善"}],
+};
+
+const Pill = ({ children, tone = "blue" }) => {
+  const colors = {
+    blue: "bg-blue-50 text-blue-900 border-blue-100",
+    green: "bg-green-50 text-green-800 border-green-100",
+    amber: "bg-amber-50 text-amber-800 border-amber-100",
+    slate: "bg-gray-50 text-gray-600 border-gray-100",
+  }[tone];
+  return <span className={`inline-flex items-center px-3 py-1 rounded-full border text-xs font-bold ${colors}`}>{children}</span>;
+};
+
+const SectionCard = ({ title, children, icon: Icon }) => (
+  <div className="mb-6 rounded-2xl bg-white p-8 shadow border border-gray-100">
+    <div className="flex items-center gap-3 mb-6">
+      {Icon && <div className="p-2 bg-gray-50 rounded-xl text-blue-900"><Icon size={20} /></div>}
+      <h3 className="text-base font-black text-gray-800">{title}</h3>
+    </div>
+    {children}
+  </div>
+);
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState("input");
+  const [viewerRole, setViewerRole] = useState("receiver");
+  const [templateKey, setTemplateKey] = useState("issue");
+  const [projectDraft, setProjectDraft] = useState({
+    title: JOB_TEMPLATES.issue.title, description: JOB_TEMPLATES.issue.description,
+    desired: JOB_TEMPLATES.issue.desired, deliverables: JOB_TEMPLATES.issue.deliverables, infoClass: "社外秘相当",
+  });
+  const [showInternal, setShowInternal] = useState(true);
+  const [showCompany, setShowCompany] = useState(true);
+  const [includePublicKnowledge, setIncludePublicKnowledge] = useState(true);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
+  const [skills, setSkills] = useState([]);
+  const [deliverables, setDeliverables] = useState([]);
+  const [selectedTeamId, setSelectedTeamId] = useState("A");
+  const [flowStatus, setFlowStatus] = useState({request:false,receiverWindow:false,senderWindow:false,participant:false,deliverable:false,complete:false});
+
+  const isReceiver = viewerRole === "receiver";
+  const isReceiverBoss = viewerRole === "receiver_boss";
+  const isReceiverSide = isReceiver || isReceiverBoss;
+  const isSender = viewerRole === "sender";
+  const isParticipant = viewerRole === "participant";
+
+  const candidateTeams = useMemo(() => TEAM_BLUEPRINTS_BY_TEMPLATE[templateKey] || TEAM_BLUEPRINTS_BY_TEMPLATE.custom, [templateKey]);
+
+  const isParticipantVisible = (p) => {
+    if (!p) return false;
+    if (isReceiverSide) {
+      if (p.orgType === "社内" && !showInternal) return false;
+      if (p.orgType === "参加企業" && !showCompany) return false;
+      if (p.orgType === "公共・地域知見" && !includePublicKnowledge) return false;
+      return true;
+    }
+    return true;
+  };
+
+  const visibleParticipants = useMemo(() => PARTICIPANTS.filter(isParticipantVisible), [showInternal,showCompany,includePublicKnowledge,viewerRole]);
+  const filteredTeams = useMemo(() => candidateTeams.map(team => {
+    const vis = team.memberIds.filter(id => isParticipantVisible(PARTICIPANTS.find(p => p.id === id)));
+    return {...team, visibleMemberIds:vis, hiddenMemberCount:team.memberIds.length - vis.length};
+  }).filter(t => t.visibleMemberIds.length > 0), [candidateTeams,showInternal,showCompany,includePublicKnowledge,viewerRole]);
+
+  const selectedTeam = candidateTeams.find(t => t.id === selectedTeamId) || candidateTeams[0];
+  const currentRoleGuide = ROLE_GUIDANCE[viewerRole] || ROLE_GUIDANCE.receiver;
+  const completedSteps = Object.values(flowStatus).filter(Boolean).length;
+  const progressRate = Math.round((completedSteps / Object.values(flowStatus).length) * 100);
+  const currentCaseMeta = CASE_META[templateKey] || CASE_META.custom;
+  const currentRequiredSkills = skills.length ? skills : (JOB_TEMPLATES[templateKey]?.skills || []);
+  const currentDeliverables = deliverables.length ? deliverables : (JOB_TEMPLATES[templateKey]?.deliverables || "").split("、").filter(Boolean);
+
+  const getDisplayName = (m) => {
+    if (!m) return "";
+    if (isReceiverSide) return m.orgType === "社内" ? m.realName : m.anonymousName;
+    if (isSender) return m.org === SENDER_ORG ? m.realName : m.anonymousName;
+    if (isParticipant) return m.id === "P02" ? "自分" : m.anonymousName;
+    return m.anonymousName;
+  };
+  const getDisplayOrg = (m) => {
+    if (!m) return "";
+    if (isReceiverSide) return m.orgType === "社内" ? m.org : m.orgType;
+    if (isSender) return m.org === SENDER_ORG ? m.org : m.orgType;
+    if (isParticipant) return m.id === "P02" ? m.org : m.orgType;
+    return m.orgType;
+  };
+
+  const handleTemplateChange = (key) => {
+    const t = JOB_TEMPLATES[key];
+    setTemplateKey(key);
+    setProjectDraft({title:t.title,description:t.description,desired:t.desired,deliverables:t.deliverables,infoClass:key==="custom"?"一般共有可":projectDraft.infoClass});
+    setAnalysis(null); setSkills([]); setDeliverables([]); setSelectedTeamId("A");
+    setFlowStatus({request:false,receiverWindow:false,senderWindow:false,participant:false,deliverable:false,complete:false});
+  };
+
+  const handleAnalyze = () => {
+    setIsAnalyzing(true);
+    setTimeout(() => {
+      const base = JOB_TEMPLATES[templateKey] || JOB_TEMPLATES.custom;
+      setAnalysis({tasks: base.tasks}); setSkills(base.skills);
+      setDeliverables((projectDraft.deliverables || base.deliverables).split("、").filter(Boolean));
+      setIsAnalyzing(false);
+    }, 900);
+  };
+
+  const handleGoToMatch = () => { if (!analysis) handleAnalyze(); setActiveTab("match"); };
+
+  const routeSteps = [
+    {key:"request",label:"1. 業務担当者",action:"業務内容と成果物を登録",detail:"業務概要・成果物案・参考資料を添付し、受入側責任者へ確認依頼します。",downloadDoc:"入力テンプレート",uploadDoc:"業務概要・成果物案",downloadReady:true,btn:"資料を添付して登録",active:isReceiver,color:"bg-blue-900"},
+    {key:"receiverWindow",label:"2. 受入側責任者",action:"登録資料を確認し、共有用に整える",detail:"業務担当者が添付した資料を確認し、必要に応じて修正版や確認メモを添付します。",downloadDoc:"業務担当者の登録資料",uploadDoc:"受入側確認メモ",downloadReady:flowStatus.request,btn:"確認資料を添付して次へ",active:isReceiverBoss,color:"bg-blue-900"},
+    {key:"senderWindow",label:"3. 参加側責任者",action:"参加可否と進め方を確認",detail:"受入側責任者の確認済み資料を見て、参加条件・担当範囲・進め方を整理します。",downloadDoc:"受入側確認済み資料",uploadDoc:"進め方確認メモ",downloadReady:flowStatus.receiverWindow,btn:"進め方を添付して次へ",active:isSender,color:"bg-green-600"},
+    {key:"participant",label:"4. 参加者",action:"担当範囲を確認して参加可否を回答",detail:"参加側責任者が整理した範囲を確認し、参加可否・対応可能範囲・補足事項を回答します。",downloadDoc:"担当範囲・参加条件",uploadDoc:"参加可否回答",downloadReady:flowStatus.senderWindow,btn:"参加可否を回答",active:isParticipant,color:"bg-amber-500"},
+    {key:"deliverable",label:"5. 参加者/参加側責任者",action:"成果物を提出",detail:"完了基準を確認し、成果物ファイルと提出メモを添付します。",downloadDoc:"完了基準・担当範囲",uploadDoc:"成果物ファイル",downloadReady:flowStatus.participant,btn:"成果物を添付して次へ",active:isParticipant||isSender,color:"bg-amber-500"},
+    {key:"complete",label:"6. 業務担当者",action:"成果物を確認し、完了確認する",detail:"提出された成果物を確認し、完了確認メモを保存します。",downloadDoc:"提出成果物",uploadDoc:"完了確認メモ",downloadReady:flowStatus.deliverable,btn:"完了確認を保存",active:isReceiver,color:"bg-blue-900"},
+  ];
+
+  const NAVY = "#1B2A6B";
+  const borderColor = isReceiverSide ? NAVY : isSender ? "#059669" : "#F59E0B";
+
+  return (
+    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 pb-32">
+      <div className="bg-yellow-50 border-b border-yellow-200 py-2 px-6 text-center">
+        <p className="text-xs font-bold text-yellow-800">
+          本デモに登場する人物・企業・団体はすべて架空です。本サービスは成果物ベースの企業間協業を支援するものであり、職業紹介・労働者派遣・採用あっせんは行いません。入力情報は外部送信されません。
+        </p>
+      </div>
+
+      <header className="sticky top-0 z-50 bg-white border-b-4" style={{borderBottomColor: borderColor}}>
+        <div className="mx-auto max-w-6xl px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3 py-4 pr-8 border-r border-gray-100">
+            <div className="p-2 rounded-xl text-white" style={{background: borderColor}}>
+              <BrainCircuit size={24} />
+            </div>
+            <div>
+              <h1 className="text-base font-black text-gray-800">Skill Community</h1>
+              <p className="text-xs font-bold text-gray-400 uppercase">業務登録デモ / {ROLE_OPTIONS.find(r=>r.value===viewerRole)?.label}</p>
+            </div>
+          </div>
+          <nav className="flex flex-1">
+            {[{id:"input",l:"1. 要件入力・AI分解"},{id:"match",l:"2. チーム候補"},{id:"route",l:"3. 連絡ルート・進捗"},{id:"outcome",l:"4. 成果確認"}].map(t => (
+              <button key={t.id} onClick={() => t.id==="match"?handleGoToMatch():setActiveTab(t.id)}
+                className={`flex-1 py-6 text-xs font-black uppercase tracking-wider transition-all ${activeTab===t.id?"text-blue-900 bg-blue-50":"text-gray-400 hover:text-gray-700"}`}>
+                {t.l}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-6 py-8">
+
+        {activeTab === "input" && (
+          <div className="grid lg:grid-cols-2 gap-8">
+            <div className="bg-white p-8 rounded-2xl shadow border border-gray-100">
+              <h3 className="text-base font-black text-gray-800 mb-4 flex items-center gap-2">
+                <FileCheck2 size={18} className="text-blue-900" /> 要件入力
+              </h3>
+              <p className="mb-6 border-b pb-4 text-sm font-bold text-gray-500">{TAB_GUIDANCE.input}</p>
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-black text-gray-400 uppercase block mb-1">入力テンプレート</label>
+                    <select value={templateKey} onChange={e=>handleTemplateChange(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-sm outline-none">
+                      {Object.entries(JOB_TEMPLATES).map(([k,s])=><option key={k} value={k}>{s.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-black text-gray-400 uppercase block mb-1">情報区分</label>
+                    <select value={projectDraft.infoClass} onChange={e=>setProjectDraft({...projectDraft,infoClass:e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-sm outline-none">
+                      {INFO_CLASSES.map(o=><option key={o}>{o}</option>)}
+                    </select>
+                    <div className="mt-2 rounded-xl bg-blue-50 border border-blue-100 p-3">
+                      <p className="text-xs font-black text-blue-900">{INFO_POLICY[projectDraft.infoClass]?.title}</p>
+                      <p className="mt-1 text-xs font-bold text-gray-600">{INFO_POLICY[projectDraft.infoClass]?.text}</p>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-black text-gray-400 uppercase block mb-1">業務名</label>
+                  <input value={projectDraft.title} onChange={e=>setProjectDraft({...projectDraft,title:e.target.value})} className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 text-base font-black outline-none" />
+                </div>
+                <div>
+                  <label className="text-xs font-black text-gray-400 uppercase block mb-1">業務概要</label>
+                  <textarea value={projectDraft.description} onChange={e=>setProjectDraft({...projectDraft,description:e.target.value})} className="w-full h-28 p-4 bg-gray-50 rounded-xl border border-gray-200 text-sm font-medium outline-none" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-black text-gray-400 uppercase block mb-1">必要な人物像</label>
+                    <textarea value={projectDraft.desired} onChange={e=>setProjectDraft({...projectDraft,desired:e.target.value})} className="w-full h-20 p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs font-bold text-gray-500 outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-black text-gray-400 uppercase block mb-1">成果物</label>
+                    <textarea value={projectDraft.deliverables} onChange={e=>setProjectDraft({...projectDraft,deliverables:e.target.value})} className="w-full h-20 p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs font-bold text-gray-500 outline-none" />
+                  </div>
+                </div>
+                {isReceiver && (
+                  <div className="flex justify-center pt-4">
+                    <button onClick={handleAnalyze} className="flex items-center gap-3 px-12 py-4 text-white rounded-2xl font-black text-base shadow-lg hover:opacity-90 transition" style={{background:NAVY}}>
+                      {isAnalyzing ? <Activity size={18} className="animate-spin" /> : <Sparkles size={18} />} 業務をAIで分解する
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className={`space-y-4 transition-all duration-700 ${analysis?"opacity-100":"opacity-30"}`}>
+              <div className="bg-white p-6 rounded-2xl shadow border-l-4" style={{borderLeftColor:NAVY}}>
+                <h4 className="text-xs font-black text-gray-400 uppercase mb-6 flex justify-between">
+                  AI分解結果 <span className="bg-blue-900 text-white px-2 py-0.5 rounded-full text-xs">AI分解</span>
+                </h4>
+                {!analysis ? (
+                  <div className="py-16 text-center text-gray-400 font-black">左のボタンでAI分解を実行してください</div>
+                ) : (
+                  <>
+                    <div className="space-y-3 mb-8">
+                      {analysis.tasks.map((t,i)=>(
+                        <div key={i} className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex justify-between items-start">
+                          <div>
+                            <p className="text-xs font-black text-gray-400">タスク {String(i+1).padStart(2,"0")}</p>
+                            <p className="mt-1 text-xs font-black text-gray-800">{t.name}</p>
+                            <p className="text-xs font-bold text-gray-500 mt-0.5">想定成果物：{t.output}</p>
+                          </div>
+                          <Pill tone={t.diff==="高"?"amber":"blue"}>難易度：{t.diff}</Pill>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="space-y-6 border-t pt-6 border-gray-100">
+                      <div>
+                        <p className="text-xs font-black text-gray-400 uppercase mb-3">必要スキル・目安レベル</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {skills.map(s=>(
+                            <div key={s.name} className="flex items-center justify-between rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">
+                              <span className="text-xs font-black text-blue-900">{s.name}</span>
+                              <span className="text-xs font-black text-gray-500">{s.level}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-gray-400 uppercase mb-3">成果物候補</p>
+                        <div className="flex flex-wrap gap-2">{currentDeliverables.map(s=><Pill key={s} tone="green">{s}</Pill>)}</div>
+                      </div>
+                      <button onClick={handleGoToMatch} className="w-full py-4 text-white rounded-2xl font-black text-sm flex items-center justify-center gap-2 shadow-lg hover:opacity-90 transition" style={{background:NAVY}}>
+                        チーム候補を見る <ArrowRight size={16} />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "match" && (
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="space-y-4">
+              <SectionCard title="案件サマリー" icon={ClipboardCheck}>
+                <div className="space-y-3">
+                  <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                    <p className="text-xs font-black text-gray-400 uppercase">業務名</p>
+                    <p className="mt-1 text-sm font-black text-gray-800">{projectDraft.title||"業務名未設定"}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                      <p className="text-xs font-black text-gray-400">案件区分</p>
+                      <p className="mt-1 text-xs font-black text-gray-800">{currentCaseMeta.category}</p>
+                    </div>
+                    <div className="rounded-xl bg-blue-50 border border-blue-100 p-3">
+                      <p className="text-xs font-black text-blue-900">情報区分</p>
+                      <p className="mt-1 text-xs font-black text-gray-800">{projectDraft.infoClass}</p>
+                    </div>
+                  </div>
+                </div>
+              </SectionCard>
+
+              {isReceiverSide && (
+                <SectionCard title="候補に含める参加元" icon={ListFilter}>
+                  <div className="space-y-4">
+                    {[
+                      {label:"社内",value:showInternal,set:setShowInternal},
+                      {label:"参加企業",value:showCompany,set:setShowCompany},
+                      {label:"公共・地域知見",value:includePublicKnowledge,set:setIncludePublicKnowledge},
+                    ].map(x=>(
+                      <div key={x.label} className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-gray-700">{x.label}を含める</span>
+                        <button onClick={()=>x.set(!x.value)} className={`w-10 h-5 rounded-full relative transition-all ${x.value?"bg-blue-900":"bg-gray-200"}`}>
+                          <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${x.value?"left-6":"left-1"}`}></div>
+                        </button>
+                      </div>
+                    ))}
+                    <p className="text-xs font-bold text-gray-400">表示中：{visibleParticipants.length}名 / チーム案：{filteredTeams.length}案</p>
+                  </div>
+                </SectionCard>
+              )}
+            </div>
+
+            <div className="lg:col-span-2 space-y-6">
+              <h2 className="text-xl font-black text-gray-800">候補チーム</h2>
+              {filteredTeams.map(team=>(
+                <div key={team.id} onClick={()=>setSelectedTeamId(team.id)}
+                  className={`cursor-pointer p-8 rounded-2xl border-4 transition-all ${selectedTeamId===team.id?"bg-white border-blue-900 shadow-xl":"bg-white border-transparent shadow"}`}>
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTeamId===team.id?"text-white":"bg-gray-100 text-gray-400"}`} style={selectedTeamId===team.id?{background:NAVY}:{}}>
+                        {team.id}
+                      </div>
+                      <div>
+                        <h4 className="text-base font-black text-gray-800">{team.name}</h4>
+                        <div className="flex gap-2 mt-2">{team.tags.map(tag=><Pill key={tag} tone="amber">{tag}</Pill>)}</div>
+                      </div>
+                    </div>
+                    <span className="text-sm font-black text-blue-900">{team.bestFor}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    {(team.visibleMemberIds||team.memberIds).map(mid=>{
+                      const m = PARTICIPANTS.find(p=>p.id===mid);
+                      return (
+                        <div key={mid} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                          <p className="text-xs font-black text-gray-400">{m.role}</p>
+                          <p className="text-sm font-black text-gray-800">{getDisplayName(m)}</p>
+                          <p className="mt-1 text-xs font-bold text-gray-400">{getDisplayOrg(m)} / {m.avail}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-sm font-bold text-gray-600 leading-relaxed bg-gray-50 rounded-xl p-4">{team.reason}</p>
+                  <button onClick={e=>{e.stopPropagation();setSelectedTeamId(team.id);setFlowStatus({...flowStatus,request:true});setActiveTab("route");}}
+                    className="mt-4 w-full py-3 text-white rounded-xl font-black text-sm shadow" style={{background:NAVY}}>
+                    このチーム案を責任者確認へ進める
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "route" && (
+          <div className="grid lg:grid-cols-2 gap-8">
+            <div className="bg-white p-8 rounded-2xl shadow border border-gray-100">
+              <h3 className="text-xl font-black text-gray-800 mb-4 flex items-center gap-3">
+                <ShieldCheck size={24} className="text-green-600" /> 連絡ルート・進捗
+              </h3>
+              <div className="mb-6 rounded-2xl bg-blue-50 border border-blue-100 p-4">
+                <p className="text-xs font-black text-blue-900 uppercase">進捗</p>
+                <div className="mt-2 h-2 rounded-full bg-white overflow-hidden border border-blue-100">
+                  <div className="h-full bg-blue-900 transition-all duration-700" style={{width:`${progressRate}%`}} />
+                </div>
+                <p className="mt-1 text-xs font-bold text-gray-600">{completedSteps} / {Object.values(flowStatus).length} ステップ完了</p>
+              </div>
+              <div className="flex flex-col gap-4">
+                {routeSteps.map(n=>{
+                  const done = flowStatus[n.key];
+                  return (
+                    <div key={n.key} className={`p-5 rounded-2xl border-2 transition-all ${n.active?"border-blue-900 bg-white":done?"border-green-400 bg-green-50":"border-gray-100 bg-gray-50 opacity-70"}`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-xs font-black text-gray-400">{n.label}</p>
+                        {done?<Pill tone="green"><Check size={10} className="mr-1 inline"/>完了</Pill>:<Pill tone={n.active?"blue":"slate"}>{n.active?"操作中":"待機中"}</Pill>}
+                      </div>
+                      <p className="text-sm font-black text-gray-800">{n.action}</p>
+                      <p className="mt-1 text-xs font-bold text-gray-500 leading-relaxed">{n.detail}</p>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <div className={`rounded-xl border p-3 ${n.downloadReady?"border-blue-100 bg-blue-50":"border-gray-100 bg-gray-50 opacity-50"}`}>
+                          <p className="text-xs font-black text-gray-400">受け取る資料</p>
+                          <p className="text-xs font-black text-gray-700 mt-1">{n.downloadDoc}</p>
+                          <button className={`mt-2 w-full flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-black ${n.downloadReady?"border-blue-100 bg-white text-blue-900":"border-gray-100 bg-white text-gray-300"}`}>
+                            <Download size={12}/> 確認
+                          </button>
+                        </div>
+                        <div className="rounded-xl border border-green-100 bg-white p-3">
+                          <p className="text-xs font-black text-gray-400">添付する資料</p>
+                          <p className="text-xs font-black text-gray-700 mt-1">{n.uploadDoc}</p>
+                          <button className="mt-2 w-full flex items-center justify-center gap-1 rounded-lg border border-green-100 bg-green-50 px-2 py-1.5 text-xs font-black text-green-700">
+                            <Upload size={12}/> 添付
+                          </button>
+                        </div>
+                      </div>
+                      {n.active && !done && (
+                        <button onClick={()=>setFlowStatus({...flowStatus,[n.key]:true})}
+                          className={`mt-3 w-full py-3 ${n.color} text-white rounded-xl font-black text-xs shadow flex items-center justify-center gap-2`}>
+                          <Send size={14}/> {n.btn}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <SectionCard title="タスク別進捗" icon={Activity}>
+                <div className="space-y-6">
+                  {(analysis?.tasks || JOB_TEMPLATES[templateKey].tasks).map((t,i)=>(
+                    <div key={i}>
+                      <div className="flex justify-between items-end mb-2">
+                        <span className="text-sm font-black text-gray-800">{t.name}</span>
+                        <span className="text-xl font-black text-blue-900">{t.progress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div className={`h-full transition-all duration-1000 ${t.progress===100?"bg-green-500":"bg-blue-900"}`} style={{width:`${t.progress}%`}} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+              <SectionCard title="記録" icon={History}>
+                <div className="space-y-2">
+                  {routeSteps.map(step=>(
+                    <div key={step.key} className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 flex items-center justify-between">
+                      <span className="text-xs font-black text-gray-700">{step.label}</span>
+                      {flowStatus[step.key]?<Pill tone="green">保存済み</Pill>:<Pill tone="slate">未</Pill>}
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "outcome" && (
+          <div className="grid lg:grid-cols-2 gap-8">
+            <div className="bg-white p-8 rounded-2xl shadow border border-gray-100">
+              <h2 className="text-xl font-black text-gray-800 mb-4">成果物・完了確認</h2>
+              <div className="mb-6 rounded-2xl bg-gray-50 border border-gray-100 p-6">
+                <h3 className="text-lg font-black text-gray-800">{projectDraft.title||"業務名未設定"}</h3>
+                <p className="mt-2 text-sm font-bold text-gray-600 leading-relaxed">{projectDraft.description||"業務概要が未入力です。"}</p>
+              </div>
+              <div className="mb-6 space-y-3">
+                {currentDeliverables.map((item,idx)=>(
+                  <div key={idx} className="flex items-center justify-between rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
+                    <p className="text-sm font-black text-gray-800">{item}</p>
+                    <Pill tone={flowStatus.complete?"green":"slate"}>{flowStatus.complete?"確認済み":"確認待ち"}</Pill>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-4">
+                <div className="p-5 rounded-2xl bg-blue-50 border border-blue-100">
+                  <p className="text-sm font-black text-gray-800 mb-2">受入側の振り返り</p>
+                  <textarea className="w-full h-20 p-3 rounded-xl border border-blue-100 bg-white text-sm font-bold outline-none" defaultValue="成果物は目的に沿っており、次の相談導線改善に使う予定です。" />
+                </div>
+                <div className="p-5 rounded-2xl bg-green-50 border border-green-100">
+                  <p className="text-sm font-black text-gray-800 mb-2">参加側の振り返り</p>
+                  <textarea className="w-full h-20 p-3 rounded-xl border border-green-100 bg-white text-sm font-bold outline-none" defaultValue="業務の目的と成果物が明確だったため、限られた時間でも進め方を確認しやすかった。" />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <SectionCard title="このロールで確認できる情報" icon={Eye}>
+                <div className="space-y-2">
+                  {["成果物概要","完了記録","プロジェクト全体の振り返り","記録CSV出力"].map(label=>(
+                    <div key={label} className="flex items-center justify-between rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
+                      <span className="text-sm font-black text-gray-700">{label}</span>
+                      <Pill tone="green">表示</Pill>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+              <SectionCard title="表示しない情報" icon={Lock}>
+                <div className="rounded-2xl bg-gray-50 border border-gray-100 p-6 text-center">
+                  <Lock size={36} className="mx-auto text-gray-300 mb-3" />
+                  <p className="text-sm font-black text-gray-800">個人の学習・キャリア情報は表示しません。</p>
+                  <p className="mt-2 text-xs font-bold text-gray-500 leading-relaxed">現状スキル、目標キャリア、スキルギャップ、教材提案は参加者本人のみが確認します。</p>
+                </div>
+              </SectionCard>
+              <button className="w-full py-4 rounded-2xl text-white text-xs font-black flex items-center justify-center gap-2" style={{background:NAVY}}>
+                <Download size={14}/> 成果物・完了記録をCSV出力
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-6 bg-white px-8 py-4 rounded-2xl shadow-2xl border border-gray-200 z-50">
+        <div className="flex items-center gap-3 border-r pr-6">
+          <div className="p-2 rounded-xl text-white" style={{background:borderColor}}><UserCog size={20}/></div>
+          <div>
+            <span className="text-xs font-black text-gray-400 block uppercase">表示ロール</span>
+            <select value={viewerRole} onChange={e=>setViewerRole(e.target.value)} className="text-sm font-black bg-transparent outline-none cursor-pointer text-blue-900">
+              {ROLE_OPTIONS.map(opt=><option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="relative"><div className="w-3 h-3 rounded-full bg-green-400 animate-ping absolute opacity-30"></div><div className="w-3 h-3 rounded-full bg-green-500 relative"></div></div>
+          <span className="text-xs font-black text-gray-600">操作デモ中</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+</script>
+</body>
+</html>

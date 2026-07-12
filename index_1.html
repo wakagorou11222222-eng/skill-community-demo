@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Skill Community — デモ</title>
+<style>
+:root{
+  --navy:#1B2A6B;
+  --navy-light:#2458A8;
+  --teal:#0E8C9B;
+  --bg:#F5F7FB;
+  --white:#FFFFFF;
+  --text:#1F2937;
+  --muted:#667085;
+  --border:#DFE5EE;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Yu Gothic UI","Noto Sans JP",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+header{background:var(--white);border-bottom:1px solid var(--border);padding:18px 32px;display:flex;align-items:center;gap:14px}
+.logo-mark{width:44px;height:44px;background:var(--navy);border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+.logo-mark svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.logo-text b{display:block;font-size:16px;font-weight:800;color:var(--navy)}
+.logo-text small{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.04em}
+.demo-badge{margin-left:auto;background:#EEF2F7;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:800;color:var(--muted)}
+
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px}
+
+.hero{text-align:center;max-width:560px;margin-bottom:56px}
+.hero h1{font-size:clamp(24px,4vw,36px);font-weight:900;color:var(--navy);line-height:1.25;letter-spacing:-.02em;margin-bottom:16px}
+.hero p{font-size:15px;color:var(--muted);line-height:1.75;font-weight:500}
+
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;width:100%;max-width:720px}
+
+.card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);padding:36px 32px;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:20px;transition:box-shadow .18s,border-color .18s,transform .18s;cursor:pointer}
+.card:hover{box-shadow:0 12px 40px rgba(27,42,107,.12);border-color:var(--navy-light);transform:translateY(-3px)}
+
+.card-icon{width:52px;height:52px;border-radius:12px;display:grid;place-items:center}
+.card-icon svg{width:28px;height:28px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-business{background:var(--navy)}
+.icon-person{background:var(--teal)}
+
+.card h2{font-size:18px;font-weight:800;color:var(--navy);line-height:1.3}
+.card p{font-size:13px;color:var(--muted);line-height:1.7;font-weight:500;flex:1}
+
+.card-bullets{list-style:none;display:flex;flex-direction:column;gap:7px}
+.card-bullets li{font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:flex-start;gap:8px}
+.card-bullets li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0;margin-top:5px}
+.card-bullets li.active::before{background:var(--teal)}
+
+.card-cta{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:800;padding:11px 20px;border-radius:9px;margin-top:4px;width:fit-content}
+.cta-business{background:var(--navy);color:#fff}
+.cta-person{background:var(--teal);color:#fff}
+.card:hover .card-cta{filter:brightness(1.12)}
+
+.notice{max-width:720px;width:100%;margin-top:28px;background:#FFF9EC;border:1px solid #F5D78C;border-radius:10px;padding:13px 18px;font-size:12px;color:#7A5C00;font-weight:600;line-height:1.6}
+
+footer{border-top:1px solid var(--border);padding:18px 32px;font-size:11px;color:var(--muted);text-align:center;line-height:1.8}
+footer a{color:var(--muted)}
+
+@media(max-width:600px){
+  .cards{grid-template-columns:1fr}
+  .hero h1{font-size:22px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><circle cx="19" cy="7" r="2.5"/><path d="M22 12c0-1.5-1.1-2.8-2.5-2.8"/></svg>
+  </div>
+  <div class="logo-text">
+    <b>Skill Community</b>
+    <small>顧客検証デモ版 — 2026</small>
+  </div>
+  <span class="demo-badge">DEMO</span>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>業務とスキルをつなぐ<br>協業プラットフォーム</h1>
+    <p>「やりたい業務はある、でも必要なスキルを持つ人が足りない」を解決します。<br>業務をAIで分解し、社内外から適切な人材をチーム化します。</p>
+  </div>
+
+  <div class="cards">
+    <!-- 業務側 -->
+    <a class="card" href="business.html">
+      <div class="card-icon icon-business">
+        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+      </div>
+      <div>
+        <h2>業務を登録する</h2>
+        <p>業務内容を入力するとAIがタスク・必要スキル・成果物に分解します。候補チームを選び、責任者経由で参加確認まで進めます。</p>
+      </div>
+      <ul class="card-bullets">
+        <li class="active">業務入力・AI分解</li>
+        <li class="active">候補チームの選択</li>
+        <li class="active">連絡ルート・進捗管理</li>
+        <li>成果物・振り返り確認</li>
+      </ul>
+      <span class="card-cta cta-business">業務担当者・責任者はこちら →</span>
+    </a>
+
+    <!-- 人材側 -->
+    <a class="card" href="skill.html">
+      <div class="card-icon icon-person">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div>
+        <h2>スキルを登録する</h2>
+        <p>業務経験を入力するとAIがタスク・成果物・スキルに整理します。本人確認・上司確認を経て、証拠付きスキルプロフィールを作成します。</p>
+      </div>
+      <ul class="card-bullets">
+        <li class="active">業務経験の入力</li>
+        <li class="active">AIによるスキル抽出</li>
+        <li class="active">本人・第三者確認</li>
+        <li class="active">スキルプロフィール作成</li>
+      </ul>
+      <span class="card-cta cta-person">参加者・人材担当はこちら →</span>
+    </a>
+  </div>
+
+  <div class="notice">
+    <b>デモ版：</b>入力した情報はブラウザ内のみで処理され、外部サーバーへは送信されません。本デモに登場する人物・企業・団体はすべて架空です。本サービスは成果物ベースの企業間協業を支援するものであり、職業紹介・労働者派遣・採用あっせんは行いません。
+  </div>
+</main>
+
+<footer>
+  スキル辞書：独立行政法人労働政策研究・研修機構（JILPT）作成「職業情報データベース 簡易版数値系ダウンロードデータ ver.7.00」
+  職業情報提供サイト（<a href="https://shigoto.mhlw.go.jp/User/download" target="_blank">job tag</a>）より取得を加工して作成
+</footer>
+
+</body>
+</html>

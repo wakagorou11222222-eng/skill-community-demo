@@ -2,23 +2,51 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>業務登録 — Skill Community デモ</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
-<script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide-react@0.484.0/dist/umd/lucide-react.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
 <style>
-  body { font-family: "Yu Gothic UI","Noto Sans JP",sans-serif; }
-  .back-bar { background:#fff; border-bottom:1px solid #DFE5EE; padding:10px 24px; }
-  .back-btn { display:inline-flex; align-items:center; gap:6px; text-decoration:none;
-    background:#EEF2F7; border-radius:8px; padding:7px 12px; font-size:12px;
-    font-weight:700; color:#1B2A6B; }
-  .back-btn:hover { background:#dce7f7; }
+  html, body { margin: 0; min-height: 100%; }
+  body { font-family: "Yu Gothic UI", "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; background: #f8fafc; }
+  .back-bar {
+    background: #fff;
+    border-bottom: 1px solid #DFE5EE;
+    padding: 10px 24px;
+    position: relative;
+    z-index: 60;
+  }
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    background: #EEF2F7;
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1B2A6B;
+  }
+  .back-btn:hover { background: #dce7f7; }
+  .boot-error {
+    max-width: 900px;
+    margin: 48px auto;
+    padding: 24px;
+    background: #fff;
+    border: 1px solid #fecaca;
+    border-radius: 18px;
+    color: #991b1b;
+    font-weight: 700;
+    line-height: 1.8;
+  }
 </style>
 </head>
-<body class="bg-gray-50">
+<body>
 
 <div class="back-bar">
   <a href="index.html" class="back-btn">← トップへ戻る</a>
@@ -26,654 +54,1589 @@
 
 <div id="root"></div>
 
-<script type="text/babel" data-presets="env,react">
-const { useMemo, useState } = React;
+<script>
+(function () {
+  const root = document.getElementById("root");
 
-// lucide icons from UMD
-const makeIcon = (name) => {
-  return ({ size = 24, className = "" }) => {
-    const icons = (typeof window !== "undefined" && window.lucide) ? window.lucide : {};
-    const el = icons[name];
-
-    // Lucide CDNが一時的に読めない場合でも、画面全体を止めないフォールバック。
-    if (!Array.isArray(el)) {
-      return React.createElement(
-        "svg",
-        {
-          width: size,
-          height: size,
-          viewBox: "0 0 24 24",
-          fill: "none",
-          stroke: "currentColor",
-          strokeWidth: 2,
-          strokeLinecap: "round",
-          strokeLinejoin: "round",
-          className,
-          style: { display: "inline-block", verticalAlign: "middle" },
-          "aria-hidden": "true"
-        },
-        React.createElement("circle", { cx: 12, cy: 12, r: 9 }),
-        React.createElement("path", { d: "M8 12h8" }),
-        React.createElement("path", { d: "M12 8v8" })
-      );
+  window.addEventListener("error", function (event) {
+    if (root && !root.hasChildNodes()) {
+      const message = event && event.message ? event.message : "不明な読み込みエラー";
+      root.innerHTML =
+        '<div class="boot-error">モックアップの起動時にエラーが発生しました。<br>' +
+        'エラー内容：' + String(message).replace(/[<>&"]/g, function(c) {
+          return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];
+        }) +
+        '<br><br>GitHub Pagesで外部CDNの読み込み状況を確認してください。</div>';
     }
+  });
 
-    const [tag, attrs, children] = el;
-    const svgAttrs = {
-      ...attrs,
-      width: size,
-      height: size,
-      className,
-      style: { display: "inline-block", verticalAlign: "middle" }
-    };
-    const renderChildren = (ch) => ch.map(([t, a, c], i) =>
-      React.createElement(t, { ...a, key: i }, c ? renderChildren(c) : null)
-    );
-    return React.createElement("svg", svgAttrs, children ? renderChildren(children) : null);
-  };
-};
+  if (!window.React || !window.ReactDOM) {
+    root.innerHTML =
+      '<div class="boot-error">ReactまたはReactDOMの読み込みに失敗しました。GitHub PagesからCDNへ接続できるか確認してください。</div>';
+    return;
+  }
 
-const Activity = makeIcon("Activity");
-const ArrowRight = makeIcon("ArrowRight");
-const BarChart3 = makeIcon("BarChart3");
-const BrainCircuit = makeIcon("BrainCircuit");
-const Building2 = makeIcon("Building2");
-const Check = makeIcon("Check");
-const CheckCircle2 = makeIcon("CheckCircle2");
-const ClipboardCheck = makeIcon("ClipboardCheck");
-const Download = makeIcon("Download");
-const Eye = makeIcon("Eye");
-const FileCheck2 = makeIcon("FileCheck2");
-const History = makeIcon("History");
-const Info = makeIcon("Info");
-const ListFilter = makeIcon("ListFilter");
-const Lock = makeIcon("Lock");
-const Send = makeIcon("Send");
-const ShieldCheck = makeIcon("ShieldCheck");
-const Sparkles = makeIcon("Sparkles");
-const Upload = makeIcon("Upload");
-const UserCog = makeIcon("UserCog");
-
+  try {
+const { useMemo, useState } = React;
+const LucideLib = window.LucideReact || window.lucideReact || window["lucide-react"] || {};
+const FallbackIcon = ({ size = 24, className = "" }) => React.createElement("span", {
+    className,
+    style: {
+        display: "inline-block",
+        width: size,
+        height: size,
+        verticalAlign: "middle"
+    },
+    "aria-hidden": "true"
+});
+const { Activity = FallbackIcon, ArrowRight = FallbackIcon, BarChart3 = FallbackIcon, BrainCircuit = FallbackIcon, Building2 = FallbackIcon, Check = FallbackIcon, CheckCircle2 = FallbackIcon, ClipboardCheck = FallbackIcon, Download = FallbackIcon, Eye = FallbackIcon, FileCheck2 = FallbackIcon, History = FallbackIcon, Info = FallbackIcon, ListFilter = FallbackIcon, Lock = FallbackIcon, Send = FallbackIcon, ShieldCheck = FallbackIcon, Sparkles = FallbackIcon, Upload = FallbackIcon, UserCog = FallbackIcon } = LucideLib;
 const ROLE_OPTIONS = [
-  { value: "receiver", label: "業務担当者" },
-  { value: "receiver_boss", label: "受入側責任者" },
-  { value: "sender", label: "参加側責任者" },
-  { value: "participant", label: "参加者" },
+    { value: "receiver", label: "業務担当者" },
+    { value: "receiver_boss", label: "受入側責任者" },
+    { value: "sender", label: "参加側責任者" },
+    { value: "participant", label: "参加者" },
 ];
-
 const ROLE_GUIDANCE = {
-  receiver: { title: "業務担当者として操作中", text: "業務内容・成果物を登録し、提出された成果物の完了確認まで行います。" },
-  receiver_boss: { title: "受入側責任者として操作中", text: "登録された業務内容を確認し、参加側責任者へ共有できる形に整えます。" },
-  sender: { title: "参加側責任者として操作中", text: "参加可否、担当範囲、進め方を確認し、参加者へ確認します。" },
-  participant: { title: "参加者として操作中", text: "担当範囲と成果物を確認し、参加可否を回答します。" },
+    receiver: {
+        title: "業務担当者として操作中",
+        text: "業務内容・成果物を登録し、提出された成果物の完了確認まで行います。",
+    },
+    receiver_boss: {
+        title: "受入側責任者として操作中",
+        text: "登録された業務内容を確認し、参加側責任者へ共有できる形に整えます。",
+    },
+    sender: {
+        title: "参加側責任者として操作中",
+        text: "参加可否、担当範囲、進め方を確認し、参加者へ確認します。",
+    },
+    participant: {
+        title: "参加者として操作中",
+        text: "担当範囲と成果物を確認し、参加可否を回答します。",
+    },
 };
-
 const INFO_CLASSES = ["一般共有可", "社内限定", "社外秘相当", "要マスキング"];
 const INFO_POLICY = {
-  "一般共有可": { title: "通常表示", text: "業務概要・成果物をそのまま候補チーム確認に利用します。" },
-  "社内限定": { title: "社外表示を抑制", text: "社外の参加者には、要約された業務概要と成果物だけを表示します。" },
-  "社外秘相当": { title: "匿名・要約表示", text: "候補チーム確認では、会社名・詳細情報を伏せ、必要スキル中心に表示します。" },
-  "要マスキング": { title: "詳細非表示", text: "添付資料や固有名詞は伏せ、責任者確認後に必要範囲だけ共有します。" },
+    "一般共有可": {
+        title: "通常表示",
+        text: "業務概要・成果物をそのまま候補チーム確認に利用します。",
+    },
+    "社内限定": {
+        title: "社外表示を抑制",
+        text: "社外の参加者には、要約された業務概要と成果物だけを表示します。",
+    },
+    "社外秘相当": {
+        title: "匿名・要約表示",
+        text: "候補チーム確認では、会社名・詳細情報を伏せ、必要スキル中心に表示します。",
+    },
+    "要マスキング": {
+        title: "詳細非表示",
+        text: "添付資料や固有名詞は伏せ、責任者確認後に必要範囲だけ共有します。",
+    },
 };
-
 const TAB_GUIDANCE = {
-  input: "業務内容を入力すると、AIがタスク・必要スキル・成果物候補に分解します。",
-  match: "業務内容・必要スキル・成果物との相性から、参加確認に進めるチーム案を選びます。",
-  route: "参加確認、進め方確認、成果物提出、完了確認までを責任者経由で進めます。",
-  outcome: "参加者本人は、現状スキルと目標キャリアの差分から、教材リンクと実務参加申請へ進み、完了後に再度この画面で到達度を確認します。",
+    input: "業務内容を入力すると、AIがタスク・必要スキル・成果物候補に分解します。",
+    match: "業務内容・必要スキル・成果物との相性から、参加確認に進めるチーム案を選びます。",
+    route: "参加確認、進め方確認、成果物提出、完了確認までを責任者経由で進めます。",
+    outcome: "参加者本人は、現状スキルと目標キャリアの差分から、教材リンクと実務参加申請へ進み、完了後に再度この画面で到達度を確認します。",
 };
-
 const JOB_TEMPLATES = {
-  custom: { label:"自由入力", title:"", description:"", desired:"", deliverables:"",
-    tasks:[{name:"業務内容の整理",output:"業務整理メモ",diff:"中",progress:0},{name:"必要情報の確認",output:"確認項目一覧",diff:"中",progress:0},{name:"成果物案の作成",output:"成果物ドラフト",diff:"中",progress:0},{name:"振り返り・改善提案",output:"改善提案メモ",diff:"低",progress:0}],
-    skills:[{name:"業務整理",level:"Lv3"},{name:"資料化",level:"Lv3"},{name:"ヒアリング",level:"Lv2"},{name:"改善提案",level:"Lv2"},{name:"関係者調整",level:"Lv2"},{name:"要点整理",level:"Lv3"}],
-    roleNeeds:["業務を整理する人","関係者に確認する人","成果物を文章化する人"],learning:["業務整理","ヒアリング","資料作成"]},
-  issue: { label:"課題整理・相談導線", title:"事業者向け相談導線の整理",
-    description:"利用者や関係者から寄せられる相談内容を分類し、相談責任者・支援制度・外部連携先を整理したい。現状は相談内容が属人的に蓄積されており、初回対応や引き継ぎに時間がかかっている。",
-    desired:"業務整理、ヒアリング設計、利用者視点、分かりやすい資料化ができる人。",
-    deliverables:"相談分類表、初回ヒアリング項目、支援制度一覧、改善提案レポート",
-    tasks:[{name:"相談内容の棚卸し",output:"相談分類表",diff:"中",progress:90},{name:"初回ヒアリング項目の整理",output:"ヒアリングシート",diff:"中",progress:70},{name:"支援制度・連携先の整理",output:"制度一覧",diff:"中",progress:45},{name:"改善提案レポート作成",output:"改善提案書",diff:"高",progress:0}],
-    skills:[{name:"業務整理",level:"Lv3"},{name:"ヒアリング設計",level:"Lv3"},{name:"利用者視点",level:"Lv2"},{name:"資料化",level:"Lv3"},{name:"支援制度整理",level:"Lv2"},{name:"改善提案",level:"Lv2"}],
-    roleNeeds:["課題を整理する人","現場に確認する人","支援制度を調べる人","レポートにまとめる人"],learning:["課題ヒアリング","業務可視化","改善提案"]},
-  qa: { label:"QA・業務標準化", title:"テスト観点表の標準化とレビュー手順整理",
-    description:"複数案件で使われているテスト観点表の粒度を揃え、レビュー時の確認項目を標準化したい。属人化しているチェック観点を整理し、新規メンバーでも使いやすい形にしたい。",
-    desired:"QA、テスト設計、レビュー設計、業務標準化、ドキュメント整備に強い人。",
-    deliverables:"テスト観点テンプレート、レビュー観点一覧、運用手順書、改善提案レポート",
-    tasks:[{name:"既存観点表の比較",output:"差分整理表",diff:"中",progress:80},{name:"標準テンプレート作成",output:"観点表テンプレート",diff:"高",progress:55},{name:"レビュー手順の整理",output:"レビュー手順書",diff:"中",progress:30},{name:"試用結果の振り返り",output:"改善レポート",diff:"中",progress:0}],
-    skills:[{name:"QA",level:"Lv3"},{name:"テスト設計",level:"Lv3"},{name:"レビュー設計",level:"Lv3"},{name:"標準化",level:"Lv2"},{name:"ドキュメント整備",level:"Lv2"},{name:"品質観点整理",level:"Lv3"}],
-    roleNeeds:["既存資料を比較する人","テンプレートを作る人","レビュー観点を整理する人"],learning:["テスト設計レビュー","品質管理","業務標準化"]},
-  knowledge: { label:"社内ナレッジ整理", title:"FAQ・問い合わせ対応ナレッジの整理",
-    description:"問い合わせ履歴を分類し、FAQと一次対応フローを整備したい。対応品質を揃え、引き継ぎや新人対応の負担を下げたい。",
-    desired:"問い合わせ分析、FAQ作成、社内SaaS運用、読みやすい文書作成に強い人。",
-    deliverables:"問い合わせ分類表、FAQ案、一次対応フロー、改善レポート",
-    tasks:[{name:"問い合わせ履歴の分類",output:"分類表",diff:"中",progress:100},{name:"FAQ構成の再設計",output:"FAQ構成案",diff:"中",progress:65},{name:"一次対応フロー作成",output:"対応フロー",diff:"中",progress:20},{name:"改善レポート作成",output:"改善レポート",diff:"低",progress:0}],
-    skills:[{name:"問い合わせ分析",level:"Lv3"},{name:"FAQ作成",level:"Lv3"},{name:"SaaS運用",level:"Lv2"},{name:"文書作成",level:"Lv3"},{name:"ナレッジ管理",level:"Lv2"},{name:"一次対応設計",level:"Lv2"}],
-    roleNeeds:["問い合わせを分類する人","FAQを書く人","運用フローを作る人"],learning:["ナレッジ管理","ヘルプデスク運用","FAQ改善"]},
+    custom: {
+        label: "自由入力",
+        title: "",
+        description: "",
+        desired: "",
+        deliverables: "",
+        tasks: [
+            { name: "業務内容の整理", output: "業務整理メモ", diff: "中", progress: 0 },
+            { name: "必要情報の確認", output: "確認項目一覧", diff: "中", progress: 0 },
+            { name: "成果物案の作成", output: "成果物ドラフト", diff: "中", progress: 0 },
+            { name: "振り返り・改善提案", output: "改善提案メモ", diff: "低", progress: 0 },
+        ],
+        skills: [
+            { name: "業務整理", level: "Lv3" },
+            { name: "資料化", level: "Lv3" },
+            { name: "ヒアリング", level: "Lv2" },
+            { name: "改善提案", level: "Lv2" },
+            { name: "関係者調整", level: "Lv2" },
+            { name: "要点整理", level: "Lv3" },
+        ],
+        roleNeeds: ["業務を整理する人", "関係者に確認する人", "成果物を文章化する人"],
+        learning: ["業務整理", "ヒアリング", "資料作成"],
+    },
+    issue: {
+        label: "課題整理・相談導線",
+        title: "事業者向け相談導線の整理",
+        description: "利用者や関係者から寄せられる相談内容を分類し、相談責任者・支援制度・外部連携先を整理したい。現状は相談内容が属人的に蓄積されており、初回対応や引き継ぎに時間がかかっている。",
+        desired: "業務整理、ヒアリング設計、利用者視点、分かりやすい資料化ができる人。",
+        deliverables: "相談分類表、初回ヒアリング項目、支援制度一覧、改善提案レポート",
+        tasks: [
+            { name: "相談内容の棚卸し", output: "相談分類表", diff: "中", progress: 90 },
+            { name: "初回ヒアリング項目の整理", output: "ヒアリングシート", diff: "中", progress: 70 },
+            { name: "支援制度・連携先の整理", output: "制度一覧", diff: "中", progress: 45 },
+            { name: "改善提案レポート作成", output: "改善提案書", diff: "高", progress: 0 },
+        ],
+        skills: [
+            { name: "業務整理", level: "Lv3" },
+            { name: "ヒアリング設計", level: "Lv3" },
+            { name: "利用者視点", level: "Lv2" },
+            { name: "資料化", level: "Lv3" },
+            { name: "支援制度整理", level: "Lv2" },
+            { name: "改善提案", level: "Lv2" },
+        ],
+        roleNeeds: ["課題を整理する人", "現場に確認する人", "支援制度を調べる人", "レポートにまとめる人"],
+        learning: ["課題ヒアリング", "業務可視化", "改善提案"],
+    },
+    qa: {
+        label: "QA・業務標準化",
+        title: "テスト観点表の標準化とレビュー手順整理",
+        description: "複数案件で使われているテスト観点表の粒度を揃え、レビュー時の確認項目を標準化したい。属人化しているチェック観点を整理し、新規メンバーでも使いやすい形にしたい。",
+        desired: "QA、テスト設計、レビュー設計、業務標準化、ドキュメント整備に強い人。",
+        deliverables: "テスト観点テンプレート、レビュー観点一覧、運用手順書、改善提案レポート",
+        tasks: [
+            { name: "既存観点表の比較", output: "差分整理表", diff: "中", progress: 80 },
+            { name: "標準テンプレート作成", output: "観点表テンプレート", diff: "高", progress: 55 },
+            { name: "レビュー手順の整理", output: "レビュー手順書", diff: "中", progress: 30 },
+            { name: "試用結果の振り返り", output: "改善レポート", diff: "中", progress: 0 },
+        ],
+        skills: [
+            { name: "QA", level: "Lv3" },
+            { name: "テスト設計", level: "Lv3" },
+            { name: "レビュー設計", level: "Lv3" },
+            { name: "標準化", level: "Lv2" },
+            { name: "ドキュメント整備", level: "Lv2" },
+            { name: "品質観点整理", level: "Lv3" },
+        ],
+        roleNeeds: ["既存資料を比較する人", "テンプレートを作る人", "レビュー観点を整理する人"],
+        learning: ["テスト設計レビュー", "品質管理", "業務標準化"],
+    },
+    knowledge: {
+        label: "社内ナレッジ整理",
+        title: "FAQ・問い合わせ対応ナレッジの整理",
+        description: "問い合わせ履歴を分類し、FAQと一次対応フローを整備したい。対応品質を揃え、引き継ぎや新人対応の負担を下げたい。",
+        desired: "問い合わせ分析、FAQ作成、社内SaaS運用、読みやすい文書作成に強い人。",
+        deliverables: "問い合わせ分類表、FAQ案、一次対応フロー、改善レポート",
+        tasks: [
+            { name: "問い合わせ履歴の分類", output: "分類表", diff: "中", progress: 100 },
+            { name: "FAQ構成の再設計", output: "FAQ構成案", diff: "中", progress: 65 },
+            { name: "一次対応フロー作成", output: "対応フロー", diff: "中", progress: 20 },
+            { name: "改善レポート作成", output: "改善レポート", diff: "低", progress: 0 },
+        ],
+        skills: [
+            { name: "問い合わせ分析", level: "Lv3" },
+            { name: "FAQ作成", level: "Lv3" },
+            { name: "SaaS運用", level: "Lv2" },
+            { name: "文書作成", level: "Lv3" },
+            { name: "ナレッジ管理", level: "Lv2" },
+            { name: "一次対応設計", level: "Lv2" },
+        ],
+        roleNeeds: ["問い合わせを分類する人", "FAQを書く人", "運用フローを作る人"],
+        learning: ["ナレッジ管理", "ヘルプデスク運用", "FAQ改善"],
+    },
+    learning: {
+        label: "学習成果の業務接続",
+        title: "学習成果を業務で使うためのタスク設計",
+        description: "学習した内容を実務で活かすため、会議メモ作成、資料要約、提案資料チェックなどの小さな業務タスクに分解し、実務接続しやすい形に整理したい。",
+        desired: "資料要約、学習支援、業務設計、振り返り設計に強い人。",
+        deliverables: "業務タスク一覧、利用シーン分類、成果物サンプル、振り返りレポート",
+        tasks: [
+            { name: "利用シーンの棚卸し", output: "利用シーン一覧", diff: "中", progress: 100 },
+            { name: "小タスクへの分解", output: "タスク一覧", diff: "中", progress: 65 },
+            { name: "成果物サンプル作成", output: "サンプル集", diff: "中", progress: 25 },
+            { name: "振り返り項目の整理", output: "振り返りシート", diff: "低", progress: 0 },
+        ],
+        skills: [
+            { name: "資料要約", level: "Lv3" },
+            { name: "業務設計", level: "Lv2" },
+            { name: "学習支援", level: "Lv2" },
+            { name: "振り返り設計", level: "Lv2" },
+            { name: "成果物サンプル作成", level: "Lv2" },
+            { name: "実務タスク化", level: "Lv3" },
+        ],
+        roleNeeds: ["学習内容を業務に分ける人", "成果物サンプルを作る人", "振り返りを設計する人"],
+        learning: ["実務タスク化", "資料要約", "振り返り設計"],
+    },
 };
-
 const CASE_META = {
-  custom:{category:"自由設計案件",collaboration:"成果物ベース",flow:"資料確認と成果物提出を中心に進行"},
-  issue:{category:"自治体・地域課題",collaboration:"成果物ベース",flow:"相談内容の整理、確認項目、改善提案を成果物として整理"},
-  qa:{category:"企業課題",collaboration:"成果物ベース",flow:"既存資料の確認、標準テンプレート、レビュー手順を成果物として整理"},
-  knowledge:{category:"社内課題",collaboration:"成果物ベース",flow:"問い合わせ分類、FAQ、一次対応フローを成果物として整理"},
+    custom: {
+        category: "自由設計案件",
+        collaboration: "成果物ベース",
+        flow: "資料確認と成果物提出を中心に進行",
+    },
+    issue: {
+        category: "自治体・地域課題",
+        collaboration: "成果物ベース",
+        flow: "相談内容の整理、確認項目、改善提案を成果物として整理",
+    },
+    qa: {
+        category: "企業課題",
+        collaboration: "成果物ベース",
+        flow: "既存資料の確認、標準テンプレート、レビュー手順を成果物として整理",
+    },
+    knowledge: {
+        category: "社内課題",
+        collaboration: "成果物ベース",
+        flow: "問い合わせ分類、FAQ、一次対応フローを成果物として整理",
+    },
+    learning: {
+        category: "学習接続",
+        collaboration: "成果物ベース",
+        flow: "学習内容を小さな実務タスクと振り返りに接続",
+    },
 };
-
-const SENDER_ORG = "参加企業A";
+const LEARNING_OUTCOMES = {
+    custom: {
+        outcomeUse: "成果物を確認し、次に使える業務テーマへ接続",
+        thanks: "短時間で業務の論点が整理され、次の確認がしやすくなりました。",
+        verifiedSkills: [
+            { skill: "業務整理", evidence: "業務整理メモを作成", change: "Lv2 → Lv3候補" },
+            { skill: "資料化", evidence: "成果物ドラフトを作成", change: "実務で確認" },
+            { skill: "関係者確認", evidence: "確認項目一覧を整理", change: "継続確認" },
+        ],
+        reflection: [
+            { step: "担当したこと", text: "業務内容を整理し、必要な確認項目と成果物案に分けました。" },
+            { step: "工夫したこと", text: "次の担当者が迷わないよう、確認順序を小さな項目に分けました。" },
+            { step: "他業務で使える型", text: "曖昧な依頼を、目的・確認事項・成果物に分ける進め方。" },
+            { step: "次に試すこと", text: "次回は初回入力時点で完了条件まで明文化します。" },
+        ],
+        nextTasks: [
+            { theme: "業務整理", reason: "成果物の前提整理が次の品質を左右するため", task: "次回案件で業務概要をタスク単位に分解", microLearning: "10分：業務分解の型" },
+            { theme: "確認項目設計", reason: "前工程の確認漏れを減らすため", task: "確認項目一覧の初版を作成", microLearning: "15分：質問設計の基礎" },
+            { theme: "改善提案", reason: "完了後の次アクションまでつなげるため", task: "改善提案メモを1枚で作成", microLearning: "10分：提案書の構成" },
+        ],
+        returnTargets: [
+            { target: "自部署の業務棚卸し", reason: "業務整理メモの作成経験を横展開できる", action: "定例業務を5つに分けて確認項目を作る" },
+            { target: "引き継ぎ資料の改善", reason: "成果物案の整理経験が近い", action: "引き継ぎ資料の冒頭に完了条件を追加する" },
+            { target: "社内問い合わせ整理", reason: "確認項目一覧の作成経験を使える", action: "問い合わせを種類別に10件分類する" },
+        ],
+    },
+    issue: {
+        outcomeUse: "相談分類表・初回ヒアリング項目を、次回の相談導線改善に使う",
+        thanks: "相談内容が分類され、初回対応時に何を確認すべきかが明確になりました。",
+        verifiedSkills: [
+            { skill: "課題ヒアリング", evidence: "初回ヒアリング項目を作成", change: "Lv2 → Lv3候補" },
+            { skill: "業務可視化", evidence: "相談分類表を作成", change: "実務で確認" },
+            { skill: "改善提案", evidence: "改善提案レポートを作成", change: "Lv1 → Lv2候補" },
+        ],
+        reflection: [
+            { step: "担当したこと", text: "相談内容を分類し、初回確認で聞くべき項目を整理しました。" },
+            { step: "工夫したこと", text: "相談者が答えやすいよう、質問を事実確認・困りごと・次の希望に分けました。" },
+            { step: "他業務で使える型", text: "複雑な相談を、分類表と初回確認項目に分けて整理する進め方。" },
+            { step: "次に試すこと", text: "次回は、相談分類ごとに対応パターンと担当部門を紐づけます。" },
+        ],
+        nextTasks: [
+            { theme: "ヒアリング設計", reason: "初回質問の粒度に改善余地があるため", task: "次回案件でヒアリングシート作成を担当", microLearning: "15分：質問設計の基礎" },
+            { theme: "業務可視化", reason: "相談導線の分岐整理が必要なため", task: "相談対応の業務フロー図を作成", microLearning: "20分：業務フロー作成" },
+            { theme: "改善提案", reason: "成果物を次の施策に接続するため", task: "改善提案レポートの構成案を作成", microLearning: "10分：提案書の型" },
+        ],
+        returnTargets: [
+            { target: "庁内・社内相談導線の見直し", reason: "相談分類表の作成経験が近い", action: "既存相談を10件分類し、初回確認項目を見直す" },
+            { target: "地域事業者支援の整理", reason: "支援制度と相談内容の紐づけを応用できる", action: "支援制度一覧に対象者・条件・担当を追記する" },
+            { target: "問い合わせ対応の標準化", reason: "初回ヒアリング設計が応用できる", action: "一次対応シートを1枚作成する" },
+        ],
+    },
+    qa: {
+        outcomeUse: "標準テンプレートとレビュー手順を、次案件の品質確認に使う",
+        thanks: "レビュー観点が揃い、確認の抜け漏れを減らせる状態になりました。",
+        verifiedSkills: [
+            { skill: "QA観点整理", evidence: "既存観点表の差分を整理", change: "Lv2 → Lv3候補" },
+            { skill: "レビュー設計", evidence: "レビュー手順書を作成", change: "実務で確認" },
+            { skill: "標準化", evidence: "観点表テンプレートを作成", change: "継続確認" },
+        ],
+        reflection: [
+            { step: "担当したこと", text: "複数案件の観点表を比較し、共通項目と案件固有項目を分けました。" },
+            { step: "工夫したこと", text: "新規メンバーでも使えるよう、レビュー手順をチェック順に並べました。" },
+            { step: "他業務で使える型", text: "属人的な確認作業を、共通テンプレートと確認順序に変換する進め方。" },
+            { step: "次に試すこと", text: "次回は試用結果から、テンプレートの不要項目を削ります。" },
+        ],
+        nextTasks: [
+            { theme: "レビュー設計", reason: "確認観点を実務で使える順序に並べる必要があるため", task: "レビュー手順書の初版を作成", microLearning: "15分：レビュー観点の作り方" },
+            { theme: "品質観点整理", reason: "案件ごとの違いを標準テンプレートに反映するため", task: "差分整理表をもとに共通観点を抽出", microLearning: "20分：テスト観点の整理" },
+            { theme: "業務標準化", reason: "属人化した確認作業を再利用可能にするため", task: "標準テンプレートの試用結果をまとめる", microLearning: "10分：標準化の進め方" },
+        ],
+        returnTargets: [
+            { target: "社内レビュー品質の平準化", reason: "レビュー手順書作成の経験が使える", action: "既存レビュー会議の確認観点を1枚化する" },
+            { target: "新人オンボーディング", reason: "観点表テンプレートが教育資料に転用できる", action: "新人向け確認チェックリストを作る" },
+            { target: "案件立ち上げ時の品質確認", reason: "差分整理表の作成経験が近い", action: "案件開始時に共通観点と固有観点を分ける" },
+        ],
+    },
+    knowledge: {
+        outcomeUse: "問い合わせ分類・FAQ・一次対応フローを、対応品質の平準化に使う",
+        thanks: "問い合わせの分類とFAQ案が整理され、一次対応の迷いが減りました。",
+        verifiedSkills: [
+            { skill: "問い合わせ分析", evidence: "問い合わせ分類表を作成", change: "Lv2 → Lv3候補" },
+            { skill: "FAQ作成", evidence: "FAQ案を作成", change: "実務で確認" },
+            { skill: "一次対応設計", evidence: "一次対応フローを作成", change: "Lv1 → Lv2候補" },
+        ],
+        reflection: [
+            { step: "担当したこと", text: "問い合わせ履歴を分類し、FAQと一次対応フローへ整理しました。" },
+            { step: "工夫したこと", text: "利用者が先に知りたい順にFAQを並べ、担当者の判断負荷を下げました。" },
+            { step: "他業務で使える型", text: "問い合わせを、原因・回答・次の対応に分けてナレッジ化する進め方。" },
+            { step: "次に試すこと", text: "次回はFAQの利用ログを見て、改善対象を絞ります。" },
+        ],
+        nextTasks: [
+            { theme: "ナレッジ管理", reason: "FAQを作って終わりにせず、更新運用へつなげるため", task: "FAQ更新ルールを作成", microLearning: "15分：ナレッジ管理の基礎" },
+            { theme: "一次対応設計", reason: "問い合わせ分類を実際の対応手順に落とすため", task: "一次対応フローを試用し、分岐を修正", microLearning: "20分：対応フロー作成" },
+            { theme: "文書作成", reason: "利用者が読みやすいFAQにするため", task: "FAQを利用者目線で書き換える", microLearning: "10分：読みやすい文章の型" },
+        ],
+        returnTargets: [
+            { target: "社内FAQ改善", reason: "FAQ案作成の経験を横展開できる", action: "自部署のFAQを10件見直す" },
+            { target: "問い合わせ削減施策", reason: "問い合わせ分類表から頻出論点を抽出できる", action: "月次問い合わせ上位3件を改善対象にする" },
+            { target: "引き継ぎ業務の標準化", reason: "一次対応フロー作成の経験が近い", action: "引き継ぎ資料に一次対応フローを追加する" },
+        ],
+    },
+    learning: {
+        outcomeUse: "学習内容を小さな実務タスクへ変換し、次の実践に使う",
+        thanks: "学習内容を具体的な業務タスクに落とせたため、実務で試しやすくなりました。",
+        verifiedSkills: [
+            { skill: "実務タスク化", evidence: "業務タスク一覧を作成", change: "Lv2 → Lv3候補" },
+            { skill: "資料要約", evidence: "成果物サンプルを作成", change: "実務で確認" },
+            { skill: "振り返り設計", evidence: "振り返り項目を整理", change: "Lv1 → Lv2候補" },
+        ],
+        reflection: [
+            { step: "担当したこと", text: "学習内容を会議メモ・資料要約・提案チェックなどの小タスクに分けました。" },
+            { step: "工夫したこと", text: "学習成果が見えやすいよう、成果物サンプルと振り返り項目をセットにしました。" },
+            { step: "他業務で使える型", text: "学んだ内容を、すぐ試せる小さな実務タスクに変換する進め方。" },
+            { step: "次に試すこと", text: "次回は実務タスクごとに完了条件とフィードバック項目を付けます。" },
+        ],
+        nextTasks: [
+            { theme: "実務タスク化", reason: "学習成果を実務で試せる単位にするため", task: "学習テーマを3つの小タスクに分解", microLearning: "10分：タスク分解の型" },
+            { theme: "成果物サンプル作成", reason: "実務で使うイメージを明確にするため", task: "会議メモ・要約・提案チェックのサンプルを作成", microLearning: "15分：成果物サンプルの作り方" },
+            { theme: "振り返り設計", reason: "学びを次の行動につなげるため", task: "完了後の振り返り項目を3つ作る", microLearning: "10分：経験学習の振り返り" },
+        ],
+        returnTargets: [
+            { target: "社内研修後の実践設計", reason: "学習内容を小タスク化した経験が使える", action: "研修後に試す実務タスクを3つ作る" },
+            { target: "OJT設計", reason: "成果物サンプル作成が育成計画に近い", action: "新人向けの成果物サンプルを1つ作る" },
+            { target: "学習効果の可視化", reason: "振り返り項目設計の経験を使える", action: "実務後の振り返りシートを作る" },
+        ],
+    },
+};
+const CAREER_GAP_LEARNING = {
+    custom: {
+        currentRole: "企画・業務サポート担当",
+        targetRole: "業務改善・プロジェクト推進担当",
+        targetSource: "会社の期待ロール＋本人のキャリア希望",
+        matchRate: 64,
+        currentSummary: "現在は、資料作成・確認事項の整理・関係者との調整を主に担当しています。目標キャリアは、曖昧な依頼を整理し、改善提案まで推進できる役割です。今回の対象業務は、その目標に近づくための実践機会として表示しています。",
+        matchedSkills: ["業務整理 Lv3", "資料化 Lv3", "要点整理 Lv3"],
+        gapSkills: [
+            { skill: "要件整理", current: "Lv2", target: "Lv3", reason: "曖昧な依頼を、目的・条件・成果物に分解する力を強化" },
+            { skill: "改善提案", current: "Lv2", target: "Lv3", reason: "整理で止めず、次の打ち手まで提案する力を強化" },
+            { skill: "関係者調整", current: "Lv2", target: "Lv3", reason: "複数部門の確認事項をまとめる進行力を強化" },
+        ],
+        courses: [
+            { title: "要件整理の基本", provider: "提携教材A", time: "20分", skill: "要件整理", reason: "業務を目的・制約・成果物に分ける型を補強" },
+            { title: "改善提案書の作り方", provider: "提携教材B", time: "30分", skill: "改善提案", reason: "整理した内容を次の施策に変える型を補強" },
+            { title: "関係者ヒアリング入門", provider: "提携教材C", time: "25分", skill: "関係者調整", reason: "確認漏れを減らす質問設計を補強" },
+        ],
+        practiceTasks: [
+            { title: "業務整理メモの作成", source: "スキルコミュニティ案件", skill: "要件整理", output: "業務整理メモ", reason: "教材で学んだ整理の型を、実務の成果物で試せる" },
+            { title: "改善提案1枚化", source: "スキルコミュニティ案件", skill: "改善提案", output: "改善提案メモ", reason: "次の打ち手を文章化する練習になる" },
+            { title: "確認項目一覧の作成", source: "スキルコミュニティ案件", skill: "関係者調整", output: "確認項目一覧", reason: "複数関係者の確認順序を整理できる" },
+        ],
+    },
+    issue: {
+        currentRole: "企画・事務オペレーション担当",
+        targetRole: "地域共創・業務改善リーダー",
+        targetSource: "会社の期待ロール＋本人のキャリア希望",
+        matchRate: 72,
+        currentSummary: "現在は、資料作成、問い合わせ整理、関係者調整などの実務経験があります。目標キャリアは、地域課題や相談導線を構造化し、関係部署・支援制度・外部連携までつなげる役割です。今回の対象業務は、そのキャリアに必要なヒアリング設計と業務可視化を伸ばす実践機会です。",
+        matchedSkills: ["業務整理 Lv3", "資料化 Lv3", "利用者視点 Lv2"],
+        gapSkills: [
+            { skill: "ヒアリング設計", current: "Lv2", target: "Lv3", reason: "初回相談で必要情報を漏れなく聞く設計力を強化" },
+            { skill: "業務フロー可視化", current: "Lv2", target: "Lv3", reason: "相談内容から対応ルートを図解する力を強化" },
+            { skill: "改善提案", current: "Lv1", target: "Lv2", reason: "分類結果を次の施策・制度改善へ接続する力を強化" },
+        ],
+        courses: [
+            { title: "質問設計・ヒアリング基礎", provider: "提携教材A", time: "15分", skill: "ヒアリング設計", reason: "相談者から必要情報を引き出す質問の型を補強" },
+            { title: "業務フロー作成入門", provider: "提携教材B", time: "20分", skill: "業務フロー可視化", reason: "相談導線を分岐・手順として見える化する力を補強" },
+            { title: "改善提案レポートの型", provider: "提携教材C", time: "10分", skill: "改善提案", reason: "成果物を次の施策に接続する文章構成を補強" },
+        ],
+        practiceTasks: [
+            { title: "初回相談シート作成", source: "スキルコミュニティ案件", skill: "ヒアリング設計", output: "初回ヒアリング項目", reason: "教材で学んだ質問設計を、実際の相談導線に適用できる" },
+            { title: "相談対応フロー図作成", source: "スキルコミュニティ案件", skill: "業務フロー可視化", output: "相談対応フロー", reason: "分類表を対応ルートに変換する実務練習になる" },
+            { title: "支援制度一覧の改善", source: "スキルコミュニティ案件", skill: "改善提案", output: "制度一覧＋改善メモ", reason: "相談内容と支援制度を結びつける提案力を伸ばせる" },
+        ],
+    },
+    qa: {
+        currentRole: "QA実務担当・テスト実行メンバー",
+        targetRole: "品質改善リード・QA標準化担当",
+        targetSource: "会社の期待ロール＋本人のキャリア希望",
+        matchRate: 76,
+        currentSummary: "現在は、テスト実行、観点整理、レビュー補助の経験があります。目標キャリアは、案件ごとの品質確認を、再利用できる標準テンプレートやレビュー手順に変えられる役割です。今回の対象業務は、レビュー設計と標準化を実務で伸ばす機会です。",
+        matchedSkills: ["QA Lv3", "テスト設計 Lv3", "品質観点整理 Lv3"],
+        gapSkills: [
+            { skill: "レビュー設計", current: "Lv2", target: "Lv3", reason: "確認観点をレビュー手順に落とす力を強化" },
+            { skill: "業務標準化", current: "Lv2", target: "Lv3", reason: "案件ごとのばらつきを共通テンプレートに変える力を強化" },
+            { skill: "改善レポート", current: "Lv1", target: "Lv2", reason: "試用結果から改善点を整理する力を強化" },
+        ],
+        courses: [
+            { title: "レビュー観点設計", provider: "提携教材A", time: "20分", skill: "レビュー設計", reason: "レビューで見るべき観点と順序を補強" },
+            { title: "業務標準化の進め方", provider: "提携教材B", time: "25分", skill: "業務標準化", reason: "属人化した作業をテンプレート化する型を補強" },
+            { title: "改善レポート基礎", provider: "提携教材C", time: "15分", skill: "改善レポート", reason: "試用結果から改善案をまとめる型を補強" },
+        ],
+        practiceTasks: [
+            { title: "レビュー手順書の初版作成", source: "スキルコミュニティ案件", skill: "レビュー設計", output: "レビュー手順書", reason: "教材で学んだレビュー観点を実務手順に落とせる" },
+            { title: "観点表テンプレート作成", source: "スキルコミュニティ案件", skill: "業務標準化", output: "観点表テンプレート", reason: "複数案件の差分を共通化する経験になる" },
+            { title: "試用結果の振り返り", source: "スキルコミュニティ案件", skill: "改善レポート", output: "改善レポート", reason: "標準化後の改善点を言語化できる" },
+        ],
+    },
+    knowledge: {
+        currentRole: "ヘルプデスク・バックオフィス担当",
+        targetRole: "ナレッジマネジメント・業務設計担当",
+        targetSource: "会社の期待ロール＋本人のキャリア希望",
+        matchRate: 69,
+        currentSummary: "現在は、問い合わせ対応、FAQ作成、社内向け文書作成の経験があります。目標キャリアは、問い合わせを単発対応で終わらせず、ナレッジとして蓄積し、一次対応フローや運用ルールまで設計できる役割です。今回の対象業務は、そのキャリアに必要な一次対応設計とナレッジ管理を伸ばす実践機会です。",
+        matchedSkills: ["問い合わせ分析 Lv3", "FAQ作成 Lv3", "文書作成 Lv3"],
+        gapSkills: [
+            { skill: "一次対応設計", current: "Lv1", target: "Lv2", reason: "FAQを実際の対応手順に落とす力を強化" },
+            { skill: "ナレッジ管理", current: "Lv2", target: "Lv3", reason: "FAQ更新・管理の運用設計力を強化" },
+            { skill: "効果測定", current: "Lv1", target: "Lv2", reason: "問い合わせ削減や対応品質を測る力を強化" },
+        ],
+        courses: [
+            { title: "一次対応フロー設計", provider: "提携教材A", time: "20分", skill: "一次対応設計", reason: "問い合わせ分類を対応手順に変える型を補強" },
+            { title: "ナレッジ管理入門", provider: "提携教材B", time: "25分", skill: "ナレッジ管理", reason: "FAQの更新ルールと管理方法を補強" },
+            { title: "問い合わせ分析と効果測定", provider: "提携教材C", time: "15分", skill: "効果測定", reason: "FAQ改善の効果を数字で見る力を補強" },
+        ],
+        practiceTasks: [
+            { title: "一次対応フロー作成", source: "スキルコミュニティ案件", skill: "一次対応設計", output: "一次対応フロー", reason: "教材で学んだ対応設計を実務に適用できる" },
+            { title: "FAQ更新ルール作成", source: "スキルコミュニティ案件", skill: "ナレッジ管理", output: "FAQ運用ルール", reason: "FAQを継続更新する実務経験になる" },
+            { title: "頻出問い合わせの改善分析", source: "スキルコミュニティ案件", skill: "効果測定", output: "改善対象一覧", reason: "問い合わせデータから改善優先順位を出す練習になる" },
+        ],
+    },
+    learning: {
+        currentRole: "人材育成・研修運用担当",
+        targetRole: "リスキリング企画・実務接続デザイナー",
+        targetSource: "会社の期待ロール＋本人のキャリア希望",
+        matchRate: 74,
+        currentSummary: "現在は、研修運用、資料要約、学習内容の整理を担当しています。目標キャリアは、学習を受講で終わらせず、実務タスク・成果物・振り返りまで接続できる育成設計の役割です。今回の対象業務は、そのキャリアに必要な教材接続と実戦機会設計を伸ばす実践機会です。",
+        matchedSkills: ["資料要約 Lv3", "実務タスク化 Lv3", "振り返り設計 Lv2"],
+        gapSkills: [
+            { skill: "キャリアパス設計", current: "Lv1", target: "Lv2", reason: "現状スキルと目標ロールの差分を整理する力を強化" },
+            { skill: "教材接続", current: "Lv1", target: "Lv2", reason: "不足スキルに合う教材を選ぶ力を強化" },
+            { skill: "実戦機会設計", current: "Lv2", target: "Lv3", reason: "学習後に挑戦する実務タスクを設計する力を強化" },
+        ],
+        courses: [
+            { title: "キャリアパス設計入門", provider: "提携教材A", time: "20分", skill: "キャリアパス設計", reason: "現在地と目標ロールの差分を整理する型を補強" },
+            { title: "教材レコメンド設計", provider: "提携教材B", time: "15分", skill: "教材接続", reason: "不足スキルと教材を結びつける観点を補強" },
+            { title: "実践型OJT設計", provider: "提携教材C", time: "25分", skill: "実戦機会設計", reason: "学習後の実務タスク設計を補強" },
+        ],
+        practiceTasks: [
+            { title: "現状スキルと目標ロールの差分整理", source: "スキルコミュニティ案件", skill: "キャリアパス設計", output: "スキルギャップ表", reason: "教材で学んだキャリア設計を、実際のスキル表で試せる" },
+            { title: "教材と実務タスクの接続表作成", source: "スキルコミュニティ案件", skill: "教材接続", output: "教材・実務接続表", reason: "講座と実務機会をセットで提示する練習になる" },
+            { title: "学習後の実戦タスク設計", source: "スキルコミュニティ案件", skill: "実戦機会設計", output: "実戦タスク案", reason: "学習内容を実務で定着させる流れを作れる" },
+        ],
+    },
+};
+const SENDER_ORG = "参加企業A"; // 参加側責任者の所属組織(この組織の候補のみ実名表示)
 const PARTICIPANTS = [
-  {id:"P01",realName:"佐藤 健一",anonymousName:"参加者ID：SC-104",org:"自社部門",orgType:"社内",window:"自社部門 責任者",role:"業務整理",avail:"一部参加可",skills:["業務整理","資料化","ヒアリング設計","FAQ作成"]},
-  {id:"P02",realName:"田中 美咲",anonymousName:"参加者ID：SC-221",org:"参加企業A",orgType:"参加企業",window:"参加企業A 責任者",role:"QA/標準化",avail:"週数時間可",skills:["QA","テスト設計","レビュー設計","標準化"]},
-  {id:"P03",realName:"小林 直樹",anonymousName:"参加者ID：SC-318",org:"自治体A",orgType:"公共・地域知見",window:"公共・地域領域 責任者",role:"地域課題整理",avail:"スポット参加可",skills:["行政DX","地域課題整理","公共サービス理解","ヒアリング","資料化"]},
-  {id:"P04",realName:"山本 里奈",anonymousName:"参加者ID：SC-417",org:"参加企業B",orgType:"参加企業",window:"参加企業B 責任者",role:"学習接続",avail:"一部参加可",skills:["資料要約","学習支援","業務設計","振り返り設計"]},
-  {id:"P05",realName:"鈴木 大輔",anonymousName:"参加者ID：SC-552",org:"参加企業C",orgType:"参加企業",window:"参加企業C 責任者",role:"業務改善",avail:"月10時間程度",skills:["業務改善","効果測定","レポート作成","SaaS運用"]},
+    {
+        id: "P01",
+        realName: "佐藤 健一",
+        anonymousName: "参加者ID：SC-104",
+        org: "自社部門",
+        orgType: "社内",
+        window: "自社部門 責任者",
+        role: "業務整理",
+        avail: "一部参加可",
+        skills: ["業務整理", "資料化", "ヒアリング設計", "FAQ作成"],
+    },
+    {
+        id: "P02",
+        realName: "田中 美咲",
+        anonymousName: "参加者ID：SC-221",
+        org: "参加企業A",
+        orgType: "参加企業",
+        window: "参加企業A 責任者",
+        role: "QA/標準化",
+        avail: "週数時間可",
+        skills: ["QA", "テスト設計", "レビュー設計", "標準化"],
+    },
+    {
+        id: "P03",
+        realName: "小林 直樹",
+        anonymousName: "参加者ID：SC-318",
+        org: "自治体A",
+        orgType: "公共・地域知見",
+        window: "公共・地域領域 責任者",
+        role: "地域課題整理",
+        avail: "スポット参加可",
+        skills: ["行政DX", "地域課題整理", "公共サービス理解", "ヒアリング", "資料化"],
+    },
+    {
+        id: "P04",
+        realName: "山本 里奈",
+        anonymousName: "参加者ID：SC-417",
+        org: "参加企業B",
+        orgType: "参加企業",
+        window: "参加企業B 責任者",
+        role: "学習接続",
+        avail: "一部参加可",
+        skills: ["資料要約", "学習支援", "業務設計", "振り返り設計"],
+    },
+    {
+        id: "P05",
+        realName: "鈴木 大輔",
+        anonymousName: "参加者ID：SC-552",
+        org: "参加企業C",
+        orgType: "参加企業",
+        window: "参加企業C 責任者",
+        role: "業務改善",
+        avail: "月10時間程度",
+        skills: ["業務改善", "効果測定", "レポート作成", "SaaS運用"],
+    },
 ];
-
 const TEAM_BLUEPRINTS_BY_TEMPLATE = {
-  custom:[{id:"A",name:"Aチーム：業務整理・資料化チーム",memberIds:["P01","P03","P05"],tags:["業務整理","ヒアリング","資料化"],reason:"業務の棚卸し、関係者確認、成果物レポート化までを一気通貫で進めやすい組み合わせです。",bestFor:"業務整理・初期設計"},{id:"B",name:"Bチーム：標準化・レビュー設計チーム",memberIds:["P02","P01","P05"],tags:["標準化","レビュー","改善"],reason:"入力された業務を標準手順・確認観点・改善レポートに落とし込む組み合わせです。",bestFor:"標準化・レビュー"},{id:"C",name:"Cチーム：学習接続・実務化チーム",memberIds:["P04","P01","P03"],tags:["学習接続","資料要約","実務タスク化"],reason:"業務を小さな実務タスクに分け、振り返りと学習テーマにつなげる組み合わせです。",bestFor:"学習成果の実務接続"}],
-  issue:[{id:"A",name:"Aチーム：課題整理・相談導線チーム",memberIds:["P03","P01","P05"],tags:["課題整理","ヒアリング","相談分類"],reason:"地域課題や相談内容を棚卸しし、初回ヒアリング項目・支援制度・連携先の整理まで進めやすい組み合わせです。",bestFor:"相談導線の整理"},{id:"B",name:"Bチーム：制度整理・資料化チーム",memberIds:["P01","P03","P04"],tags:["制度整理","資料化","利用者視点"],reason:"相談内容を利用者目線で整理し、支援制度一覧や説明資料に落とし込む組み合わせです。",bestFor:"制度・資料整理"},{id:"C",name:"Cチーム：改善提案・効果整理チーム",memberIds:["P05","P01","P03"],tags:["改善提案","効果測定","関係者調整"],reason:"相談導線を整理した後に、改善施策・運用負荷・効果測定までまとめる組み合わせです。",bestFor:"改善提案"}],
-  qa:[{id:"A",name:"Aチーム：QA標準化・レビュー設計チーム",memberIds:["P02","P05","P01"],tags:["QA","テスト設計","レビュー"],reason:"テスト観点表やレビュー手順を標準化するための組み合わせです。",bestFor:"QA・標準化"},{id:"B",name:"Bチーム：観点表テンプレート作成チーム",memberIds:["P02","P01","P04"],tags:["観点整理","テンプレート","文書化"],reason:"QA担当の知見を、誰でも使える観点表テンプレートや運用手順に変換する組み合わせです。",bestFor:"テンプレート化"},{id:"C",name:"Cチーム：試用・改善レポートチーム",memberIds:["P02","P05","P03"],tags:["試用結果","改善","レポート"],reason:"標準化した手順を試用し、改善点や運用上の注意点をレポート化する組み合わせです。",bestFor:"試用・改善"}],
-  knowledge:[{id:"A",name:"Aチーム：FAQ・一次対応整理チーム",memberIds:["P01","P05","P04"],tags:["FAQ","一次対応","ナレッジ管理"],reason:"問い合わせ履歴を分類し、FAQ案と一次対応フローを整備する組み合わせです。",bestFor:"FAQ・一次対応"},{id:"B",name:"Bチーム：問い合わせ分類・文書化チーム",memberIds:["P04","P01","P03"],tags:["問い合わせ分類","文書作成","利用者視点"],reason:"問い合わせ内容を読み手目線で分類し、分かりやすいナレッジ文書に変換する組み合わせです。",bestFor:"分類・文書化"},{id:"C",name:"Cチーム：運用改善・効果測定チーム",memberIds:["P05","P01","P02"],tags:["SaaS運用","効果測定","標準化"],reason:"FAQや一次対応フローを運用に乗せ、改善サイクルや効果測定まで設計する組み合わせです。",bestFor:"運用改善"}],
+    custom: [
+        {
+            id: "A",
+            name: "Aチーム：業務整理・資料化チーム",
+            memberIds: ["P01", "P03", "P05"],
+            tags: ["業務整理", "ヒアリング", "資料化"],
+            reason: "業務の棚卸し、関係者確認、成果物レポート化までを一気通貫で進めやすい組み合わせです。自由入力された業務を、まず実行可能な形に整理する用途に向いています。",
+            bestFor: "業務整理・初期設計",
+        },
+        {
+            id: "B",
+            name: "Bチーム：標準化・レビュー設計チーム",
+            memberIds: ["P02", "P01", "P05"],
+            tags: ["標準化", "レビュー", "改善"],
+            reason: "入力された業務を標準手順・確認観点・改善レポートに落とし込む組み合わせです。属人化した作業を共通化したい場合に向いています。",
+            bestFor: "標準化・レビュー",
+        },
+        {
+            id: "C",
+            name: "Cチーム：学習接続・実務化チーム",
+            memberIds: ["P04", "P01", "P03"],
+            tags: ["学習接続", "資料要約", "実務タスク化"],
+            reason: "業務を小さな実務タスクに分け、振り返りと学習テーマにつなげる組み合わせです。育成や実務接続を重視する場合に向いています。",
+            bestFor: "学習成果の実務接続",
+        },
+    ],
+    issue: [
+        {
+            id: "A",
+            name: "Aチーム：課題整理・相談導線チーム",
+            memberIds: ["P03", "P01", "P05"],
+            tags: ["課題整理", "ヒアリング", "相談分類"],
+            reason: "地域課題や相談内容を棚卸しし、初回ヒアリング項目・支援制度・連携先の整理まで進めやすい組み合わせです。相談導線の見える化に最も向いています。",
+            bestFor: "相談導線の整理",
+        },
+        {
+            id: "B",
+            name: "Bチーム：制度整理・資料化チーム",
+            memberIds: ["P01", "P03", "P04"],
+            tags: ["制度整理", "資料化", "利用者視点"],
+            reason: "相談内容を利用者目線で整理し、支援制度一覧や説明資料に落とし込む組み合わせです。読み手に分かりやすい資料化に向いています。",
+            bestFor: "制度・資料整理",
+        },
+        {
+            id: "C",
+            name: "Cチーム：改善提案・効果整理チーム",
+            memberIds: ["P05", "P01", "P03"],
+            tags: ["改善提案", "効果測定", "関係者調整"],
+            reason: "相談導線を整理した後に、改善施策・運用負荷・効果測定までまとめる組み合わせです。次の実行計画まで作りたい場合に向いています。",
+            bestFor: "改善提案",
+        },
+    ],
+    qa: [
+        {
+            id: "A",
+            name: "Aチーム：QA標準化・レビュー設計チーム",
+            memberIds: ["P02", "P05", "P01"],
+            tags: ["QA", "テスト設計", "レビュー"],
+            reason: "テスト観点表やレビュー手順を標準化するための組み合わせです。既存資料の差分比較から標準テンプレート作成まで進めやすい案です。",
+            bestFor: "QA・標準化",
+        },
+        {
+            id: "B",
+            name: "Bチーム：観点表テンプレート作成チーム",
+            memberIds: ["P02", "P01", "P04"],
+            tags: ["観点整理", "テンプレート", "文書化"],
+            reason: "QA担当の知見を、誰でも使える観点表テンプレートや運用手順に変換する組み合わせです。新規メンバーにも使いやすい形にしたい場合に向いています。",
+            bestFor: "テンプレート化",
+        },
+        {
+            id: "C",
+            name: "Cチーム：試用・改善レポートチーム",
+            memberIds: ["P02", "P05", "P03"],
+            tags: ["試用結果", "改善", "レポート"],
+            reason: "標準化した手順を試用し、改善点や運用上の注意点をレポート化する組み合わせです。現場で使えるかを確認したい場合に向いています。",
+            bestFor: "試用・改善",
+        },
+    ],
+    knowledge: [
+        {
+            id: "A",
+            name: "Aチーム：FAQ・一次対応整理チーム",
+            memberIds: ["P01", "P05", "P04"],
+            tags: ["FAQ", "一次対応", "ナレッジ管理"],
+            reason: "問い合わせ履歴を分類し、FAQ案と一次対応フローを整備する組み合わせです。対応品質を揃えたい場合に向いています。",
+            bestFor: "FAQ・一次対応",
+        },
+        {
+            id: "B",
+            name: "Bチーム：問い合わせ分類・文書化チーム",
+            memberIds: ["P04", "P01", "P03"],
+            tags: ["問い合わせ分類", "文書作成", "利用者視点"],
+            reason: "問い合わせ内容を読み手目線で分類し、分かりやすいナレッジ文書に変換する組み合わせです。新人や引き継ぎ向けの整理に向いています。",
+            bestFor: "分類・文書化",
+        },
+        {
+            id: "C",
+            name: "Cチーム：運用改善・効果測定チーム",
+            memberIds: ["P05", "P01", "P02"],
+            tags: ["SaaS運用", "効果測定", "標準化"],
+            reason: "FAQや一次対応フローを運用に乗せ、改善サイクルや効果測定まで設計する組み合わせです。ナレッジを作って終わりにしたくない場合に向いています。",
+            bestFor: "運用改善",
+        },
+    ],
+    learning: [
+        {
+            id: "A",
+            name: "Aチーム：学習接続・実務化チーム",
+            memberIds: ["P04", "P01", "P03"],
+            tags: ["学習接続", "実務タスク化", "振り返り"],
+            reason: "学習内容を小さな業務タスクに分解し、成果物と振り返りにつなげる組み合わせです。学んだ内容を実務で使う入口設計に向いています。",
+            bestFor: "学習成果の実務接続",
+        },
+        {
+            id: "B",
+            name: "Bチーム：成果物サンプル作成チーム",
+            memberIds: ["P04", "P05", "P01"],
+            tags: ["資料要約", "成果物サンプル", "業務設計"],
+            reason: "会議メモ、資料要約、提案資料チェックなど、学習成果を具体的な成果物サンプルに変換する組み合わせです。実務利用イメージを作る場合に向いています。",
+            bestFor: "成果物サンプル",
+        },
+        {
+            id: "C",
+            name: "Cチーム：振り返り・次回実践設計チーム",
+            memberIds: ["P01", "P04", "P02"],
+            tags: ["振り返り設計", "レビュー", "次回実践"],
+            reason: "実務で試した結果を振り返り、次に伸ばす学習テーマと次回担当できる業務を整理する組み合わせです。学習を一回で終わらせず、次の実務へ接続したい場合に向いています。",
+            bestFor: "振り返り・再実践",
+        },
+    ],
 };
-
+const SectionCard = ({ title, children, icon: Icon, badge, color = "bg-white" }) => (React.createElement("div", { className: `mb-8 rounded-[40px] ${color} p-10 shadow-2xl border border-slate-100 transition-all` },
+    React.createElement("div", { className: "flex items-center justify-between mb-8 gap-4" },
+        React.createElement("div", { className: "flex items-center gap-4" },
+            Icon && React.createElement("div", { className: "p-3 bg-slate-50 rounded-2xl text-[#003366]" },
+                React.createElement(Icon, { size: 24 })),
+            React.createElement("h3", { className: "text-xl font-black text-slate-800 tracking-tight" }, title)),
+        badge && React.createElement("span", { className: "px-5 py-1.5 bg-blue-50 text-[#003366] text-[10px] font-black rounded-full uppercase tracking-widest" }, badge)),
+    children));
 const Pill = ({ children, tone = "blue" }) => {
-  const colors = {
-    blue: "bg-blue-50 text-blue-900 border-blue-100",
-    green: "bg-green-50 text-green-800 border-green-100",
-    amber: "bg-amber-50 text-amber-800 border-amber-100",
-    slate: "bg-gray-50 text-gray-600 border-gray-100",
-  }[tone];
-  return <span className={`inline-flex items-center px-3 py-1 rounded-full border text-xs font-bold ${colors}`}>{children}</span>;
+    const colors = {
+        blue: "bg-blue-50 text-[#003366] border-blue-100",
+        green: "bg-green-50 text-green-700 border-green-100",
+        amber: "bg-amber-50 text-amber-700 border-amber-100",
+        slate: "bg-slate-50 text-slate-600 border-slate-100",
+    }[tone];
+    return React.createElement("span", { className: `inline-flex items-center px-3 py-1 rounded-full border text-[10px] font-black ${colors}` }, children);
 };
-
-const SectionCard = ({ title, children, icon: Icon }) => (
-  <div className="mb-6 rounded-2xl bg-white p-8 shadow border border-gray-100">
-    <div className="flex items-center gap-3 mb-6">
-      {Icon && <div className="p-2 bg-gray-50 rounded-xl text-blue-900"><Icon size={20} /></div>}
-      <h3 className="text-base font-black text-gray-800">{title}</h3>
-    </div>
-    {children}
-  </div>
-);
-
 function App() {
-  const [activeTab, setActiveTab] = useState("input");
-  const [viewerRole, setViewerRole] = useState("receiver");
-  const [templateKey, setTemplateKey] = useState("issue");
-  const [projectDraft, setProjectDraft] = useState({
-    title: JOB_TEMPLATES.issue.title, description: JOB_TEMPLATES.issue.description,
-    desired: JOB_TEMPLATES.issue.desired, deliverables: JOB_TEMPLATES.issue.deliverables, infoClass: "社外秘相当",
-  });
-  const [showInternal, setShowInternal] = useState(true);
-  const [showCompany, setShowCompany] = useState(true);
-  const [includePublicKnowledge, setIncludePublicKnowledge] = useState(true);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState(null);
-  const [skills, setSkills] = useState([]);
-  const [deliverables, setDeliverables] = useState([]);
-  const [selectedTeamId, setSelectedTeamId] = useState("A");
-  const [flowStatus, setFlowStatus] = useState({request:false,receiverWindow:false,senderWindow:false,participant:false,deliverable:false,complete:false});
-
-  const isReceiver = viewerRole === "receiver";
-  const isReceiverBoss = viewerRole === "receiver_boss";
-  const isReceiverSide = isReceiver || isReceiverBoss;
-  const isSender = viewerRole === "sender";
-  const isParticipant = viewerRole === "participant";
-
-  const candidateTeams = useMemo(() => TEAM_BLUEPRINTS_BY_TEMPLATE[templateKey] || TEAM_BLUEPRINTS_BY_TEMPLATE.custom, [templateKey]);
-
-  const isParticipantVisible = (p) => {
-    if (!p) return false;
-    if (isReceiverSide) {
-      if (p.orgType === "社内" && !showInternal) return false;
-      if (p.orgType === "参加企業" && !showCompany) return false;
-      if (p.orgType === "公共・地域知見" && !includePublicKnowledge) return false;
-      return true;
-    }
-    return true;
-  };
-
-  const visibleParticipants = useMemo(() => PARTICIPANTS.filter(isParticipantVisible), [showInternal,showCompany,includePublicKnowledge,viewerRole]);
-  const filteredTeams = useMemo(() => candidateTeams.map(team => {
-    const vis = team.memberIds.filter(id => isParticipantVisible(PARTICIPANTS.find(p => p.id === id)));
-    return {...team, visibleMemberIds:vis, hiddenMemberCount:team.memberIds.length - vis.length};
-  }).filter(t => t.visibleMemberIds.length > 0), [candidateTeams,showInternal,showCompany,includePublicKnowledge,viewerRole]);
-
-  const selectedTeam = candidateTeams.find(t => t.id === selectedTeamId) || candidateTeams[0];
-  const currentRoleGuide = ROLE_GUIDANCE[viewerRole] || ROLE_GUIDANCE.receiver;
-  const completedSteps = Object.values(flowStatus).filter(Boolean).length;
-  const progressRate = Math.round((completedSteps / Object.values(flowStatus).length) * 100);
-  const currentCaseMeta = CASE_META[templateKey] || CASE_META.custom;
-  const currentRequiredSkills = skills.length ? skills : (JOB_TEMPLATES[templateKey]?.skills || []);
-  const currentDeliverables = deliverables.length ? deliverables : (JOB_TEMPLATES[templateKey]?.deliverables || "").split("、").filter(Boolean);
-
-  const getDisplayName = (m) => {
-    if (!m) return "";
-    if (isReceiverSide) return m.orgType === "社内" ? m.realName : m.anonymousName;
-    if (isSender) return m.org === SENDER_ORG ? m.realName : m.anonymousName;
-    if (isParticipant) return m.id === "P02" ? "自分" : m.anonymousName;
-    return m.anonymousName;
-  };
-  const getDisplayOrg = (m) => {
-    if (!m) return "";
-    if (isReceiverSide) return m.orgType === "社内" ? m.org : m.orgType;
-    if (isSender) return m.org === SENDER_ORG ? m.org : m.orgType;
-    if (isParticipant) return m.id === "P02" ? m.org : m.orgType;
-    return m.orgType;
-  };
-
-  const handleTemplateChange = (key) => {
-    const t = JOB_TEMPLATES[key];
-    setTemplateKey(key);
-    setProjectDraft({title:t.title,description:t.description,desired:t.desired,deliverables:t.deliverables,infoClass:key==="custom"?"一般共有可":projectDraft.infoClass});
-    setAnalysis(null); setSkills([]); setDeliverables([]); setSelectedTeamId("A");
-    setFlowStatus({request:false,receiverWindow:false,senderWindow:false,participant:false,deliverable:false,complete:false});
-  };
-
-  const handleAnalyze = () => {
-    setIsAnalyzing(true);
-    setTimeout(() => {
-      const base = JOB_TEMPLATES[templateKey] || JOB_TEMPLATES.custom;
-      setAnalysis({tasks: base.tasks}); setSkills(base.skills);
-      setDeliverables((projectDraft.deliverables || base.deliverables).split("、").filter(Boolean));
-      setIsAnalyzing(false);
-    }, 900);
-  };
-
-  const handleGoToMatch = () => { if (!analysis) handleAnalyze(); setActiveTab("match"); };
-
-  const routeSteps = [
-    {key:"request",label:"1. 業務担当者",action:"業務内容と成果物を登録",detail:"業務概要・成果物案・参考資料を添付し、受入側責任者へ確認依頼します。",downloadDoc:"入力テンプレート",uploadDoc:"業務概要・成果物案",downloadReady:true,btn:"資料を添付して登録",active:isReceiver,color:"bg-blue-900"},
-    {key:"receiverWindow",label:"2. 受入側責任者",action:"登録資料を確認し、共有用に整える",detail:"業務担当者が添付した資料を確認し、必要に応じて修正版や確認メモを添付します。",downloadDoc:"業務担当者の登録資料",uploadDoc:"受入側確認メモ",downloadReady:flowStatus.request,btn:"確認資料を添付して次へ",active:isReceiverBoss,color:"bg-blue-900"},
-    {key:"senderWindow",label:"3. 参加側責任者",action:"参加可否と進め方を確認",detail:"受入側責任者の確認済み資料を見て、参加条件・担当範囲・進め方を整理します。",downloadDoc:"受入側確認済み資料",uploadDoc:"進め方確認メモ",downloadReady:flowStatus.receiverWindow,btn:"進め方を添付して次へ",active:isSender,color:"bg-green-600"},
-    {key:"participant",label:"4. 参加者",action:"担当範囲を確認して参加可否を回答",detail:"参加側責任者が整理した範囲を確認し、参加可否・対応可能範囲・補足事項を回答します。",downloadDoc:"担当範囲・参加条件",uploadDoc:"参加可否回答",downloadReady:flowStatus.senderWindow,btn:"参加可否を回答",active:isParticipant,color:"bg-amber-500"},
-    {key:"deliverable",label:"5. 参加者/参加側責任者",action:"成果物を提出",detail:"完了基準を確認し、成果物ファイルと提出メモを添付します。",downloadDoc:"完了基準・担当範囲",uploadDoc:"成果物ファイル",downloadReady:flowStatus.participant,btn:"成果物を添付して次へ",active:isParticipant||isSender,color:"bg-amber-500"},
-    {key:"complete",label:"6. 業務担当者",action:"成果物を確認し、完了確認する",detail:"提出された成果物を確認し、完了確認メモを保存します。",downloadDoc:"提出成果物",uploadDoc:"完了確認メモ",downloadReady:flowStatus.deliverable,btn:"完了確認を保存",active:isReceiver,color:"bg-blue-900"},
-  ];
-
-  const NAVY = "#1B2A6B";
-  const borderColor = isReceiverSide ? NAVY : isSender ? "#059669" : "#F59E0B";
-
-  return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 pb-32">
-      <div className="bg-yellow-50 border-b border-yellow-200 py-2 px-6 text-center">
-        <p className="text-xs font-bold text-yellow-800">
-          本デモに登場する人物・企業・団体はすべて架空です。本サービスは成果物ベースの企業間協業を支援するものであり、職業紹介・労働者派遣・採用あっせんは行いません。入力情報は外部送信されません。
-        </p>
-      </div>
-
-      <header className="sticky top-0 z-50 bg-white border-b-4" style={{borderBottomColor: borderColor}}>
-        <div className="mx-auto max-w-6xl px-6 flex items-center justify-between">
-          <div className="flex items-center gap-3 py-4 pr-8 border-r border-gray-100">
-            <div className="p-2 rounded-xl text-white" style={{background: borderColor}}>
-              <BrainCircuit size={24} />
-            </div>
-            <div>
-              <h1 className="text-base font-black text-gray-800">Skill Community</h1>
-              <p className="text-xs font-bold text-gray-400 uppercase">業務登録デモ / {ROLE_OPTIONS.find(r=>r.value===viewerRole)?.label}</p>
-            </div>
-          </div>
-          <nav className="flex flex-1">
-            {[{id:"input",l:"1. 要件入力・AI分解"},{id:"match",l:"2. チーム候補"},{id:"route",l:"3. 連絡ルート・進捗"},{id:"outcome",l:"4. 成果確認"}].map(t => (
-              <button key={t.id} onClick={() => t.id==="match"?handleGoToMatch():setActiveTab(t.id)}
-                className={`flex-1 py-6 text-xs font-black uppercase tracking-wider transition-all ${activeTab===t.id?"text-blue-900 bg-blue-50":"text-gray-400 hover:text-gray-700"}`}>
-                {t.l}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl px-6 py-8">
-
-        {activeTab === "input" && (
-          <div className="grid lg:grid-cols-2 gap-8">
-            <div className="bg-white p-8 rounded-2xl shadow border border-gray-100">
-              <h3 className="text-base font-black text-gray-800 mb-4 flex items-center gap-2">
-                <FileCheck2 size={18} className="text-blue-900" /> 要件入力
-              </h3>
-              <p className="mb-6 border-b pb-4 text-sm font-bold text-gray-500">{TAB_GUIDANCE.input}</p>
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-black text-gray-400 uppercase block mb-1">入力テンプレート</label>
-                    <select value={templateKey} onChange={e=>handleTemplateChange(e.target.value)} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-sm outline-none">
-                      {Object.entries(JOB_TEMPLATES).map(([k,s])=><option key={k} value={k}>{s.label}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-black text-gray-400 uppercase block mb-1">情報区分</label>
-                    <select value={projectDraft.infoClass} onChange={e=>setProjectDraft({...projectDraft,infoClass:e.target.value})} className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 font-bold text-sm outline-none">
-                      {INFO_CLASSES.map(o=><option key={o}>{o}</option>)}
-                    </select>
-                    <div className="mt-2 rounded-xl bg-blue-50 border border-blue-100 p-3">
-                      <p className="text-xs font-black text-blue-900">{INFO_POLICY[projectDraft.infoClass]?.title}</p>
-                      <p className="mt-1 text-xs font-bold text-gray-600">{INFO_POLICY[projectDraft.infoClass]?.text}</p>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-black text-gray-400 uppercase block mb-1">業務名</label>
-                  <input value={projectDraft.title} onChange={e=>setProjectDraft({...projectDraft,title:e.target.value})} className="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 text-base font-black outline-none" />
-                </div>
-                <div>
-                  <label className="text-xs font-black text-gray-400 uppercase block mb-1">業務概要</label>
-                  <textarea value={projectDraft.description} onChange={e=>setProjectDraft({...projectDraft,description:e.target.value})} className="w-full h-28 p-4 bg-gray-50 rounded-xl border border-gray-200 text-sm font-medium outline-none" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-black text-gray-400 uppercase block mb-1">必要な人物像</label>
-                    <textarea value={projectDraft.desired} onChange={e=>setProjectDraft({...projectDraft,desired:e.target.value})} className="w-full h-20 p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs font-bold text-gray-500 outline-none" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-black text-gray-400 uppercase block mb-1">成果物</label>
-                    <textarea value={projectDraft.deliverables} onChange={e=>setProjectDraft({...projectDraft,deliverables:e.target.value})} className="w-full h-20 p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs font-bold text-gray-500 outline-none" />
-                  </div>
-                </div>
-                {isReceiver && (
-                  <div className="flex justify-center pt-4">
-                    <button onClick={handleAnalyze} className="flex items-center gap-3 px-12 py-4 text-white rounded-2xl font-black text-base shadow-lg hover:opacity-90 transition" style={{background:NAVY}}>
-                      {isAnalyzing ? <Activity size={18} className="animate-spin" /> : <Sparkles size={18} />} 業務をAIで分解する
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className={`space-y-4 transition-all duration-700 ${analysis?"opacity-100":"opacity-30"}`}>
-              <div className="bg-white p-6 rounded-2xl shadow border-l-4" style={{borderLeftColor:NAVY}}>
-                <h4 className="text-xs font-black text-gray-400 uppercase mb-6 flex justify-between">
-                  AI分解結果 <span className="bg-blue-900 text-white px-2 py-0.5 rounded-full text-xs">AI分解</span>
-                </h4>
-                {!analysis ? (
-                  <div className="py-16 text-center text-gray-400 font-black">左のボタンでAI分解を実行してください</div>
-                ) : (
-                  <>
-                    <div className="space-y-3 mb-8">
-                      {analysis.tasks.map((t,i)=>(
-                        <div key={i} className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex justify-between items-start">
-                          <div>
-                            <p className="text-xs font-black text-gray-400">タスク {String(i+1).padStart(2,"0")}</p>
-                            <p className="mt-1 text-xs font-black text-gray-800">{t.name}</p>
-                            <p className="text-xs font-bold text-gray-500 mt-0.5">想定成果物：{t.output}</p>
-                          </div>
-                          <Pill tone={t.diff==="高"?"amber":"blue"}>難易度：{t.diff}</Pill>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="space-y-6 border-t pt-6 border-gray-100">
-                      <div>
-                        <p className="text-xs font-black text-gray-400 uppercase mb-3">必要スキル・目安レベル</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {skills.map(s=>(
-                            <div key={s.name} className="flex items-center justify-between rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">
-                              <span className="text-xs font-black text-blue-900">{s.name}</span>
-                              <span className="text-xs font-black text-gray-500">{s.level}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-xs font-black text-gray-400 uppercase mb-3">成果物候補</p>
-                        <div className="flex flex-wrap gap-2">{currentDeliverables.map(s=><Pill key={s} tone="green">{s}</Pill>)}</div>
-                      </div>
-                      <button onClick={handleGoToMatch} className="w-full py-4 text-white rounded-2xl font-black text-sm flex items-center justify-center gap-2 shadow-lg hover:opacity-90 transition" style={{background:NAVY}}>
-                        チーム候補を見る <ArrowRight size={16} />
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "match" && (
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="space-y-4">
-              <SectionCard title="案件サマリー" icon={ClipboardCheck}>
-                <div className="space-y-3">
-                  <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
-                    <p className="text-xs font-black text-gray-400 uppercase">業務名</p>
-                    <p className="mt-1 text-sm font-black text-gray-800">{projectDraft.title||"業務名未設定"}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
-                      <p className="text-xs font-black text-gray-400">案件区分</p>
-                      <p className="mt-1 text-xs font-black text-gray-800">{currentCaseMeta.category}</p>
-                    </div>
-                    <div className="rounded-xl bg-blue-50 border border-blue-100 p-3">
-                      <p className="text-xs font-black text-blue-900">情報区分</p>
-                      <p className="mt-1 text-xs font-black text-gray-800">{projectDraft.infoClass}</p>
-                    </div>
-                  </div>
-                </div>
-              </SectionCard>
-
-              {isReceiverSide && (
-                <SectionCard title="候補に含める参加元" icon={ListFilter}>
-                  <div className="space-y-4">
-                    {[
-                      {label:"社内",value:showInternal,set:setShowInternal},
-                      {label:"参加企業",value:showCompany,set:setShowCompany},
-                      {label:"公共・地域知見",value:includePublicKnowledge,set:setIncludePublicKnowledge},
-                    ].map(x=>(
-                      <div key={x.label} className="flex items-center justify-between">
-                        <span className="text-sm font-bold text-gray-700">{x.label}を含める</span>
-                        <button onClick={()=>x.set(!x.value)} className={`w-10 h-5 rounded-full relative transition-all ${x.value?"bg-blue-900":"bg-gray-200"}`}>
-                          <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${x.value?"left-6":"left-1"}`}></div>
-                        </button>
-                      </div>
-                    ))}
-                    <p className="text-xs font-bold text-gray-400">表示中：{visibleParticipants.length}名 / チーム案：{filteredTeams.length}案</p>
-                  </div>
-                </SectionCard>
-              )}
-            </div>
-
-            <div className="lg:col-span-2 space-y-6">
-              <h2 className="text-xl font-black text-gray-800">候補チーム</h2>
-              {filteredTeams.map(team=>(
-                <div key={team.id} onClick={()=>setSelectedTeamId(team.id)}
-                  className={`cursor-pointer p-8 rounded-2xl border-4 transition-all ${selectedTeamId===team.id?"bg-white border-blue-900 shadow-xl":"bg-white border-transparent shadow"}`}>
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${selectedTeamId===team.id?"text-white":"bg-gray-100 text-gray-400"}`} style={selectedTeamId===team.id?{background:NAVY}:{}}>
-                        {team.id}
-                      </div>
-                      <div>
-                        <h4 className="text-base font-black text-gray-800">{team.name}</h4>
-                        <div className="flex gap-2 mt-2">{team.tags.map(tag=><Pill key={tag} tone="amber">{tag}</Pill>)}</div>
-                      </div>
-                    </div>
-                    <span className="text-sm font-black text-blue-900">{team.bestFor}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    {(team.visibleMemberIds||team.memberIds).map(mid=>{
-                      const m = PARTICIPANTS.find(p=>p.id===mid);
-                      return (
-                        <div key={mid} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                          <p className="text-xs font-black text-gray-400">{m.role}</p>
-                          <p className="text-sm font-black text-gray-800">{getDisplayName(m)}</p>
-                          <p className="mt-1 text-xs font-bold text-gray-400">{getDisplayOrg(m)} / {m.avail}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <p className="text-sm font-bold text-gray-600 leading-relaxed bg-gray-50 rounded-xl p-4">{team.reason}</p>
-                  <button onClick={e=>{e.stopPropagation();setSelectedTeamId(team.id);setFlowStatus({...flowStatus,request:true});setActiveTab("route");}}
-                    className="mt-4 w-full py-3 text-white rounded-xl font-black text-sm shadow" style={{background:NAVY}}>
-                    このチーム案を責任者確認へ進める
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === "route" && (
-          <div className="grid lg:grid-cols-2 gap-8">
-            <div className="bg-white p-8 rounded-2xl shadow border border-gray-100">
-              <h3 className="text-xl font-black text-gray-800 mb-4 flex items-center gap-3">
-                <ShieldCheck size={24} className="text-green-600" /> 連絡ルート・進捗
-              </h3>
-              <div className="mb-6 rounded-2xl bg-blue-50 border border-blue-100 p-4">
-                <p className="text-xs font-black text-blue-900 uppercase">進捗</p>
-                <div className="mt-2 h-2 rounded-full bg-white overflow-hidden border border-blue-100">
-                  <div className="h-full bg-blue-900 transition-all duration-700" style={{width:`${progressRate}%`}} />
-                </div>
-                <p className="mt-1 text-xs font-bold text-gray-600">{completedSteps} / {Object.values(flowStatus).length} ステップ完了</p>
-              </div>
-              <div className="flex flex-col gap-4">
-                {routeSteps.map(n=>{
-                  const done = flowStatus[n.key];
-                  return (
-                    <div key={n.key} className={`p-5 rounded-2xl border-2 transition-all ${n.active?"border-blue-900 bg-white":done?"border-green-400 bg-green-50":"border-gray-100 bg-gray-50 opacity-70"}`}>
-                      <div className="flex justify-between items-start mb-2">
-                        <p className="text-xs font-black text-gray-400">{n.label}</p>
-                        {done?<Pill tone="green"><Check size={10} className="mr-1 inline"/>完了</Pill>:<Pill tone={n.active?"blue":"slate"}>{n.active?"操作中":"待機中"}</Pill>}
-                      </div>
-                      <p className="text-sm font-black text-gray-800">{n.action}</p>
-                      <p className="mt-1 text-xs font-bold text-gray-500 leading-relaxed">{n.detail}</p>
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        <div className={`rounded-xl border p-3 ${n.downloadReady?"border-blue-100 bg-blue-50":"border-gray-100 bg-gray-50 opacity-50"}`}>
-                          <p className="text-xs font-black text-gray-400">受け取る資料</p>
-                          <p className="text-xs font-black text-gray-700 mt-1">{n.downloadDoc}</p>
-                          <button className={`mt-2 w-full flex items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-black ${n.downloadReady?"border-blue-100 bg-white text-blue-900":"border-gray-100 bg-white text-gray-300"}`}>
-                            <Download size={12}/> 確認
-                          </button>
-                        </div>
-                        <div className="rounded-xl border border-green-100 bg-white p-3">
-                          <p className="text-xs font-black text-gray-400">添付する資料</p>
-                          <p className="text-xs font-black text-gray-700 mt-1">{n.uploadDoc}</p>
-                          <button className="mt-2 w-full flex items-center justify-center gap-1 rounded-lg border border-green-100 bg-green-50 px-2 py-1.5 text-xs font-black text-green-700">
-                            <Upload size={12}/> 添付
-                          </button>
-                        </div>
-                      </div>
-                      {n.active && !done && (
-                        <button onClick={()=>setFlowStatus({...flowStatus,[n.key]:true})}
-                          className={`mt-3 w-full py-3 ${n.color} text-white rounded-xl font-black text-xs shadow flex items-center justify-center gap-2`}>
-                          <Send size={14}/> {n.btn}
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <SectionCard title="タスク別進捗" icon={Activity}>
-                <div className="space-y-6">
-                  {(analysis?.tasks || JOB_TEMPLATES[templateKey].tasks).map((t,i)=>(
-                    <div key={i}>
-                      <div className="flex justify-between items-end mb-2">
-                        <span className="text-sm font-black text-gray-800">{t.name}</span>
-                        <span className="text-xl font-black text-blue-900">{t.progress}%</span>
-                      </div>
-                      <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                        <div className={`h-full transition-all duration-1000 ${t.progress===100?"bg-green-500":"bg-blue-900"}`} style={{width:`${t.progress}%`}} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </SectionCard>
-              <SectionCard title="記録" icon={History}>
-                <div className="space-y-2">
-                  {routeSteps.map(step=>(
-                    <div key={step.key} className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 flex items-center justify-between">
-                      <span className="text-xs font-black text-gray-700">{step.label}</span>
-                      {flowStatus[step.key]?<Pill tone="green">保存済み</Pill>:<Pill tone="slate">未</Pill>}
-                    </div>
-                  ))}
-                </div>
-              </SectionCard>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "outcome" && (
-          <div className="grid lg:grid-cols-2 gap-8">
-            <div className="bg-white p-8 rounded-2xl shadow border border-gray-100">
-              <h2 className="text-xl font-black text-gray-800 mb-4">成果物・完了確認</h2>
-              <div className="mb-6 rounded-2xl bg-gray-50 border border-gray-100 p-6">
-                <h3 className="text-lg font-black text-gray-800">{projectDraft.title||"業務名未設定"}</h3>
-                <p className="mt-2 text-sm font-bold text-gray-600 leading-relaxed">{projectDraft.description||"業務概要が未入力です。"}</p>
-              </div>
-              <div className="mb-6 space-y-3">
-                {currentDeliverables.map((item,idx)=>(
-                  <div key={idx} className="flex items-center justify-between rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
-                    <p className="text-sm font-black text-gray-800">{item}</p>
-                    <Pill tone={flowStatus.complete?"green":"slate"}>{flowStatus.complete?"確認済み":"確認待ち"}</Pill>
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-4">
-                <div className="p-5 rounded-2xl bg-blue-50 border border-blue-100">
-                  <p className="text-sm font-black text-gray-800 mb-2">受入側の振り返り</p>
-                  <textarea className="w-full h-20 p-3 rounded-xl border border-blue-100 bg-white text-sm font-bold outline-none" defaultValue="成果物は目的に沿っており、次の相談導線改善に使う予定です。" />
-                </div>
-                <div className="p-5 rounded-2xl bg-green-50 border border-green-100">
-                  <p className="text-sm font-black text-gray-800 mb-2">参加側の振り返り</p>
-                  <textarea className="w-full h-20 p-3 rounded-xl border border-green-100 bg-white text-sm font-bold outline-none" defaultValue="業務の目的と成果物が明確だったため、限られた時間でも進め方を確認しやすかった。" />
-                </div>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <SectionCard title="このロールで確認できる情報" icon={Eye}>
-                <div className="space-y-2">
-                  {["成果物概要","完了記録","プロジェクト全体の振り返り","記録CSV出力"].map(label=>(
-                    <div key={label} className="flex items-center justify-between rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
-                      <span className="text-sm font-black text-gray-700">{label}</span>
-                      <Pill tone="green">表示</Pill>
-                    </div>
-                  ))}
-                </div>
-              </SectionCard>
-              <SectionCard title="表示しない情報" icon={Lock}>
-                <div className="rounded-2xl bg-gray-50 border border-gray-100 p-6 text-center">
-                  <Lock size={36} className="mx-auto text-gray-300 mb-3" />
-                  <p className="text-sm font-black text-gray-800">個人の学習・キャリア情報は表示しません。</p>
-                  <p className="mt-2 text-xs font-bold text-gray-500 leading-relaxed">現状スキル、目標キャリア、スキルギャップ、教材提案は参加者本人のみが確認します。</p>
-                </div>
-              </SectionCard>
-              <button className="w-full py-4 rounded-2xl text-white text-xs font-black flex items-center justify-center gap-2" style={{background:NAVY}}>
-                <Download size={14}/> 成果物・完了記録をCSV出力
-              </button>
-            </div>
-          </div>
-        )}
-      </main>
-
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-6 bg-white px-8 py-4 rounded-2xl shadow-2xl border border-gray-200 z-50">
-        <div className="flex items-center gap-3 border-r pr-6">
-          <div className="p-2 rounded-xl text-white" style={{background:borderColor}}><UserCog size={20}/></div>
-          <div>
-            <span className="text-xs font-black text-gray-400 block uppercase">表示ロール</span>
-            <select value={viewerRole} onChange={e=>setViewerRole(e.target.value)} className="text-sm font-black bg-transparent outline-none cursor-pointer text-blue-900">
-              {ROLE_OPTIONS.map(opt=><option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </select>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="relative"><div className="w-3 h-3 rounded-full bg-green-400 animate-ping absolute opacity-30"></div><div className="w-3 h-3 rounded-full bg-green-500 relative"></div></div>
-          <span className="text-xs font-black text-gray-600">操作デモ中</span>
-        </div>
-      </div>
-    </div>
-  );
+    const [activeTab, setActiveTab] = useState("input");
+    const [viewerRole, setViewerRole] = useState("receiver");
+    const [templateKey, setTemplateKey] = useState("issue");
+    const [projectDraft, setProjectDraft] = useState({
+        title: JOB_TEMPLATES.issue.title,
+        description: JOB_TEMPLATES.issue.description,
+        desired: JOB_TEMPLATES.issue.desired,
+        deliverables: JOB_TEMPLATES.issue.deliverables,
+        infoClass: "社外秘相当",
+    });
+    const [showInternal, setShowInternal] = useState(true);
+    const [showCompany, setShowCompany] = useState(true);
+    const [includePublicKnowledge, setIncludePublicKnowledge] = useState(true);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [analysis, setAnalysis] = useState(null);
+    const [skills, setSkills] = useState([]);
+    const [deliverables, setDeliverables] = useState([]);
+    const [selectedTeamId, setSelectedTeamId] = useState("A");
+    const [flowStatus, setFlowStatus] = useState({
+        request: false,
+        receiverWindow: false,
+        senderWindow: false,
+        participant: false,
+        deliverable: false,
+        complete: false,
+    });
+    const isReceiver = viewerRole === "receiver";
+    const isReceiverBoss = viewerRole === "receiver_boss";
+    const isReceiverSide = isReceiver || isReceiverBoss;
+    const isSender = viewerRole === "sender";
+    const isParticipant = viewerRole === "participant";
+    const candidateTeams = useMemo(() => {
+        return TEAM_BLUEPRINTS_BY_TEMPLATE[templateKey] || TEAM_BLUEPRINTS_BY_TEMPLATE.custom;
+    }, [templateKey]);
+    const canEditCandidateSources = isReceiverSide;
+    const isParticipantVisible = (p) => {
+        if (!p)
+            return false;
+        // 業務担当者・受入側責任者は、候補に含める参加元を切り替えられる。
+        if (canEditCandidateSources) {
+            if (p.orgType === "社内" && !showInternal)
+                return false;
+            if (p.orgType === "参加企業" && !showCompany)
+                return false;
+            if (p.orgType === "公共・地域知見" && !includePublicKnowledge)
+                return false;
+            return true;
+        }
+        // 参加側責任者・参加者は、候補探索ではなく確認画面として表示する。
+        // そのため参加元トグルは出さず、他組織は匿名・役割中心で表示する。
+        return true;
+    };
+    const visibleParticipants = useMemo(() => {
+        return PARTICIPANTS.filter(isParticipantVisible);
+    }, [showInternal, showCompany, includePublicKnowledge, canEditCandidateSources]);
+    const filteredTeams = useMemo(() => {
+        return candidateTeams
+            .map((team) => {
+            const visibleMemberIds = team.memberIds.filter((id) => {
+                const member = PARTICIPANTS.find((p) => p.id === id);
+                return isParticipantVisible(member);
+            });
+            return {
+                ...team,
+                visibleMemberIds,
+                hiddenMemberCount: team.memberIds.length - visibleMemberIds.length,
+            };
+        })
+            .filter((team) => team.visibleMemberIds.length > 0);
+    }, [candidateTeams, showInternal, showCompany, includePublicKnowledge, canEditCandidateSources]);
+    const selectedTeam = candidateTeams.find((team) => team.id === selectedTeamId) || candidateTeams[0];
+    const currentRoleLabel = ROLE_OPTIONS.find((r) => r.value === viewerRole)?.label || "業務担当者";
+    const currentRoleGuide = ROLE_GUIDANCE[viewerRole] || ROLE_GUIDANCE.receiver;
+    const completedSteps = Object.values(flowStatus).filter(Boolean).length;
+    const totalSteps = Object.values(flowStatus).length;
+    const progressRate = Math.round((completedSteps / totalSteps) * 100);
+    const learningRecommendations = (JOB_TEMPLATES[templateKey]?.learning || JOB_TEMPLATES.custom.learning).map((theme, index) => ({
+        theme,
+        source: ["受入側振り返り", "参加側振り返り", "参加側責任者確認"][index % 3],
+        reason: [
+            "受入側から『初回確認項目をもう少し簡略化したい』という改善点が出ているため、次回は確認項目の設計力を伸ばすと効果が出やすいです。",
+            "参加側から『目的と成果物が明確だと参加しやすい』という振り返りがあるため、業務を小さな実務タスクへ分ける力を伸ばす余地があります。",
+            "参加側責任者が参加実績を確認する際、成果物だけでなく次回の担当可能範囲まで整理できると、学習と次の実務接続が進みやすくなります。",
+        ][index % 3],
+        nextAction: [
+            "次回案件で初回ヒアリング項目の整理を担当",
+            "成果物作成前に小タスク分解シートを作成",
+            "振り返り内容をもとに、次回担当できる業務範囲を参加側責任者と確認",
+        ][index % 3],
+    }));
+    const routeSteps = [
+        {
+            key: "request",
+            label: "1. 業務担当者",
+            action: "業務内容と成果物を登録",
+            detail: "業務概要・成果物案・参考資料を添付し、受入側責任者へ確認依頼します。",
+            downloadDoc: "入力テンプレート",
+            uploadDoc: "業務概要・成果物案",
+            downloadReady: true,
+            logLabel: "業務登録資料",
+            btn: "資料を添付して登録",
+            active: isReceiver,
+            color: "bg-[#003366]",
+        },
+        {
+            key: "receiverWindow",
+            label: "2. 受入側責任者",
+            action: "登録資料を確認し、共有用に整える",
+            detail: "業務担当者が添付した資料を確認し、必要に応じて修正版や確認メモを添付します。",
+            downloadDoc: "業務担当者の登録資料",
+            uploadDoc: "受入側確認メモ",
+            downloadReady: flowStatus.request,
+            logLabel: "受入側確認資料",
+            btn: "確認資料を添付して次へ",
+            active: isReceiverBoss,
+            color: "bg-[#003366]",
+        },
+        {
+            key: "senderWindow",
+            label: "3. 参加側責任者",
+            action: "参加可否と進め方を確認",
+            detail: "受入側責任者の確認済み資料を見て、参加条件・担当範囲・進め方を整理します。",
+            downloadDoc: "受入側確認済み資料",
+            uploadDoc: "進め方確認メモ",
+            downloadReady: flowStatus.receiverWindow,
+            logLabel: "参加側確認資料",
+            btn: "進め方を添付して次へ",
+            active: isSender,
+            color: "bg-green-600",
+        },
+        {
+            key: "participant",
+            label: "4. 参加者",
+            action: "担当範囲を確認して参加可否を回答",
+            detail: "参加側責任者が整理した範囲を確認し、参加可否・対応可能範囲・補足事項を回答します。",
+            downloadDoc: "担当範囲・参加条件",
+            uploadDoc: "参加可否回答",
+            downloadReady: flowStatus.senderWindow,
+            logLabel: "参加可否回答",
+            btn: "参加可否を回答",
+            active: isParticipant,
+            color: "bg-amber-500",
+        },
+        {
+            key: "deliverable",
+            label: "5. 参加者/参加側責任者",
+            action: "成果物を提出",
+            detail: "完了基準を確認し、成果物ファイルと提出メモを添付します。",
+            downloadDoc: "完了基準・担当範囲",
+            uploadDoc: "成果物ファイル",
+            downloadReady: flowStatus.participant,
+            logLabel: "提出成果物",
+            btn: "成果物を添付して次へ",
+            active: isParticipant || isSender,
+            color: "bg-amber-500",
+        },
+        {
+            key: "complete",
+            label: "6. 業務担当者",
+            action: "成果物を確認し、完了確認する",
+            detail: "提出された成果物を確認し、完了確認メモを保存します。必要に応じて振り返りへ進みます。",
+            downloadDoc: "提出成果物",
+            uploadDoc: "完了確認メモ",
+            downloadReady: flowStatus.deliverable,
+            logLabel: "完了確認記録",
+            btn: "完了確認を保存",
+            active: isReceiver,
+            color: "bg-[#003366]",
+        },
+    ];
+    const currentDeliverables = deliverables.length ? deliverables : (JOB_TEMPLATES[templateKey]?.deliverables || "").split("、").filter(Boolean);
+    const currentRequiredSkills = skills.length ? skills : (JOB_TEMPLATES[templateKey]?.skills || []);
+    const currentTemplateLabel = JOB_TEMPLATES[templateKey]?.label || "自由入力";
+    const currentCaseMeta = CASE_META[templateKey] || CASE_META.custom;
+    const currentLearningOutcome = LEARNING_OUTCOMES[templateKey] || LEARNING_OUTCOMES.custom;
+    const currentCareerLearning = CAREER_GAP_LEARNING[templateKey] || CAREER_GAP_LEARNING.custom;
+    const getCourseProgress = (index) => ([
+        { code: "教材01", status: "学習中", percent: 65, tone: "blue", detail: "視聴中：基礎パート完了、実践パートへ進行中", action: "教材を開いて続きから学習" },
+        { code: "教材02", status: "次に学習", percent: 15, tone: "amber", detail: "導入部分のみ確認済み。教材01完了後に本格着手", action: "学習予定を確認" },
+        { code: "教材03", status: "完了", percent: 100, tone: "green", detail: "確認テストまで完了。成果・学習画面に反映済み", action: "完了内容を見る" },
+    ][index] || { code: `教材${String(index + 1).padStart(2, "0")}`, status: "未開始", percent: 0, tone: "slate", detail: "未開始", action: "教材を開く" });
+    const getPracticeProgress = (index) => ([
+        { code: "業務01", status: "参加申請準備中", percent: 25, tone: "amber", detail: "参加申請フォームの入力途中。担当範囲と成果物を確認中", action: "参加申請フォームへ進む" },
+        { code: "業務02", status: "実践中", percent: 45, tone: "blue", detail: "参加確認済み。成果物ドラフトを作成中", action: "実務画面を開く" },
+        { code: "業務03", status: "完了", percent: 100, tone: "green", detail: "成果物提出・振り返り登録まで完了。現状スキルへ反映済み", action: "成果物を見る" },
+    ][index] || { code: `業務${String(index + 1).padStart(2, "0")}`, status: "未開始", percent: 0, tone: "slate", detail: "未開始", action: "参加申請フォームへ進む" });
+    const progressToneClass = (tone) => ({
+        blue: "bg-blue-50 border-blue-100 text-[#003366]",
+        green: "bg-green-50 border-green-100 text-green-700",
+        amber: "bg-amber-50 border-amber-100 text-amber-700",
+        slate: "bg-slate-50 border-slate-100 text-slate-500",
+    }[tone] || "bg-slate-50 border-slate-100 text-slate-500");
+    const progressBarClass = (tone) => ({
+        blue: "bg-[#003366]",
+        green: "bg-green-500",
+        amber: "bg-amber-500",
+        slate: "bg-slate-300",
+    }[tone] || "bg-slate-300");
+    const activeCourse = currentCareerLearning.courses[0];
+    const completedCourse = currentCareerLearning.courses[2] || currentCareerLearning.courses.find((_, idx) => getCourseProgress(idx).percent === 100);
+    const activePractice = currentCareerLearning.practiceTasks[1] || currentCareerLearning.practiceTasks[0];
+    const completedPractice = currentCareerLearning.practiceTasks[2] || currentCareerLearning.practiceTasks.find((_, idx) => getPracticeProgress(idx).percent === 100);
+    const learningFlowSteps = [
+        {
+            no: "01",
+            title: "現状・目標確認",
+            status: "完了",
+            percent: 100,
+            tone: "green",
+            main: `キャリア到達度 ${currentCareerLearning.matchRate}% を確認済み`,
+            sub: "現状スキル・目標キャリア・不足スキルを確認",
+        },
+        {
+            no: "02",
+            title: "教材で学習",
+            status: "学習中",
+            percent: getCourseProgress(0).percent,
+            tone: "blue",
+            main: `${getCourseProgress(0).code}：${activeCourse?.title || "教材未設定"}`,
+            sub: completedCourse ? `完了済み：${getCourseProgress(2).code} ${completedCourse.title}` : "教材完了後に現状へ反映",
+        },
+        {
+            no: "03",
+            title: "業務で実践",
+            status: "実践中",
+            percent: getPracticeProgress(1).percent,
+            tone: "blue",
+            main: `${getPracticeProgress(1).code}：${activePractice?.title || "業務未設定"}`,
+            sub: completedPractice ? `完了済み：${getPracticeProgress(2).code} ${completedPractice.title}` : "成果物提出後に現状へ反映",
+        },
+        {
+            no: "04",
+            title: "完了後に再確認",
+            status: "再確認待ち",
+            percent: 0,
+            tone: "slate",
+            main: "教材・業務完了後にこの画面へ戻る",
+            sub: "到達度・スキルギャップ・次の教材/業務を更新",
+        },
+    ];
+    const currentProjectSummary = projectDraft.description
+        ? (projectDraft.description.length > 92 ? `${projectDraft.description.slice(0, 92)}...` : projectDraft.description)
+        : "業務概要が未入力です。";
+    const getDisplayName = (m) => {
+        if (!m)
+            return "";
+        // 業務担当者・受入側責任者：社内候補のみ実名、外部候補は参加者ID中心。
+        if (isReceiverSide) {
+            return m.orgType === "社内" ? m.realName : m.anonymousName;
+        }
+        // 参加側責任者：自組織の候補のみ実名、他組織(他の参加企業を含む)は参加者ID中心。
+        if (isSender) {
+            return m.org === SENDER_ORG ? m.realName : m.anonymousName;
+        }
+        // 参加者：本人確認を想定し、その他のメンバーは参加者ID中心。
+        if (isParticipant) {
+            return m.id === "P02" ? "自分" : m.anonymousName;
+        }
+        return m.anonymousName;
+    };
+    const getDisplayOrg = (m) => {
+        if (!m)
+            return "";
+        if (isReceiverSide)
+            return m.orgType === "社内" ? m.org : m.orgType;
+        if (isSender)
+            return m.org === SENDER_ORG ? m.org : m.orgType;
+        if (isParticipant)
+            return m.id === "P02" ? m.org : m.orgType;
+        return m.orgType;
+    };
+    const getDisplayWindow = (m) => {
+        if (!m)
+            return "";
+        if (isReceiverSide)
+            return m.orgType === "社内" ? m.window : `${m.orgType} 責任者`;
+        if (isSender)
+            return m.org === SENDER_ORG ? m.window : `${m.orgType}側責任者`;
+        if (isParticipant)
+            return m.id === "P02" ? m.window : `${m.orgType}側責任者`;
+        return `${m.orgType}側責任者`;
+    };
+    const handleTemplateChange = (key) => {
+        const t = JOB_TEMPLATES[key];
+        setTemplateKey(key);
+        setProjectDraft({
+            title: t.title,
+            description: t.description,
+            desired: t.desired,
+            deliverables: t.deliverables,
+            infoClass: key === "custom" ? "一般共有可" : projectDraft.infoClass,
+        });
+        setAnalysis(null);
+        setSkills([]);
+        setDeliverables([]);
+        setSelectedTeamId("A");
+        setFlowStatus({ request: false, receiverWindow: false, senderWindow: false, participant: false, deliverable: false, complete: false });
+    };
+    const handleAnalyze = () => {
+        setIsAnalyzing(true);
+        setTimeout(() => {
+            const base = JOB_TEMPLATES[templateKey] || JOB_TEMPLATES.custom;
+            const genericTasks = base.tasks;
+            const fallbackSkills = base.skills;
+            setAnalysis({ tasks: genericTasks });
+            setSkills(fallbackSkills);
+            setDeliverables((projectDraft.deliverables || base.deliverables).split("、").filter(Boolean));
+            setIsAnalyzing(false);
+        }, 900);
+    };
+    const handleGoToMatch = () => {
+        if (!analysis)
+            handleAnalyze();
+        setActiveTab("match");
+    };
+    return (React.createElement("div", { className: "min-h-screen bg-[#f8fafc] font-sans text-slate-900 pb-40" },
+        React.createElement("header", { className: `sticky top-0 z-[100] bg-white border-b-4 transition-all ${isReceiverSide ? "border-[#003366]" : isSender ? "border-green-500" : "border-amber-500"}` },
+            React.createElement("div", { className: "mx-auto max-w-7xl px-8 flex items-center justify-between" },
+                React.createElement("div", { className: "flex items-center gap-3 py-6 pr-10 border-r border-slate-100" },
+                    React.createElement("div", { className: `p-2.5 rounded-2xl text-white ${isReceiverSide ? "bg-[#003366]" : isSender ? "bg-green-500" : "bg-amber-500"}` },
+                        React.createElement(BrainCircuit, { size: 28 })),
+                    React.createElement("div", null,
+                        React.createElement("h1", { className: "text-xl font-black text-slate-800 tracking-tight" }, "Skill Community"),
+                        React.createElement("p", { className: "text-[9px] font-black text-slate-400 uppercase tracking-widest" },
+                            "\u696D\u52D9\u9023\u643A\u30C7\u30E2 / \u73FE\u5728\u306E\u8868\u793A\uFF1A",
+                            currentRoleLabel))),
+                React.createElement("nav", { className: "flex flex-1 h-full" }, [
+                    { id: "input", l: "1. 要件入力・AI分解" },
+                    { id: "match", l: "2. チーム候補" },
+                    { id: "route", l: "3. 連絡ルート・進捗" },
+                    { id: "outcome", l: "4. 成果・学習" },
+                ].map((t) => (React.createElement("button", { key: t.id, onClick: () => (t.id === "match" ? handleGoToMatch() : setActiveTab(t.id)), className: `flex-1 py-8 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === t.id ? "text-[#003366] bg-blue-50/50" : "text-slate-400 hover:text-slate-700"}` }, t.l)))))),
+        React.createElement("div", { className: "bg-slate-100 border-b border-slate-200 py-2 px-8 text-center" },
+            React.createElement("p", { className: "text-[10px] font-bold text-slate-500 leading-relaxed" }, "\u672C\u30C7\u30E2\u306B\u767B\u5834\u3059\u308B\u4EBA\u7269\u30FB\u4F01\u696D\u30FB\u56E3\u4F53\u306F\u3059\u3079\u3066\u67B6\u7A7A\u3067\u3059\u3002\u672C\u30B5\u30FC\u30D3\u30B9\u306F\u6210\u679C\u7269\u30D9\u30FC\u30B9\u306E\u4F01\u696D\u9593\u5354\u696D\u3092\u652F\u63F4\u3059\u308B\u3082\u306E\u3067\u3042\u308A\u3001\u8077\u696D\u7D39\u4ECB\u30FB\u52B4\u50CD\u8005\u6D3E\u9063\u30FB\u63A1\u7528\u3042\u3063\u305B\u3093\u306F\u884C\u3044\u307E\u305B\u3093\u3002\u53C2\u52A0\u8005\u306E\u500B\u4EBA\u60C5\u5831\u306F\u3001\u672C\u4EBA\u306E\u540C\u610F\u3068\u95B2\u89A7\u6A29\u9650\u306B\u57FA\u3065\u3044\u3066\u8868\u793A\u7BC4\u56F2\u3092\u5236\u5FA1\u3057\u307E\u3059\u3002")),
+        React.createElement("main", { className: "mx-auto max-w-7xl px-8 py-10" },
+            activeTab === "input" && (React.createElement("div", { className: "grid lg:grid-cols-[1fr_450px] gap-10 animate-in fade-in slide-in-from-bottom-6" },
+                React.createElement("div", { className: "bg-white p-10 rounded-[40px] shadow-2xl border border-slate-100" },
+                    React.createElement("h3", { className: "text-xl font-black text-slate-800 mb-4 flex items-center gap-3" },
+                        React.createElement(FileCheck2, { className: "text-[#003366]" }),
+                        " \u8981\u4EF6\u5165\u529B"),
+                    React.createElement("p", { className: "mb-10 border-b pb-6 text-sm font-bold leading-relaxed text-slate-500" }, TAB_GUIDANCE.input),
+                    React.createElement("div", { className: "space-y-8" },
+                        React.createElement("div", { className: "grid grid-cols-2 gap-6" },
+                            React.createElement("div", { className: "space-y-1" },
+                                React.createElement("label", { className: "text-[10px] font-black text-slate-400 uppercase" }, "\u5165\u529B\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8"),
+                                React.createElement("select", { value: templateKey, onChange: (e) => handleTemplateChange(e.target.value), className: "w-full p-4 bg-slate-50 rounded-2xl border border-slate-200 font-bold text-sm outline-none" }, Object.entries(JOB_TEMPLATES).map(([key, s]) => React.createElement("option", { key: key, value: key }, s.label)))),
+                            React.createElement("div", { className: "space-y-1" },
+                                React.createElement("label", { className: "text-[10px] font-black text-slate-400 uppercase" }, "\u60C5\u5831\u533A\u5206"),
+                                React.createElement("select", { value: projectDraft.infoClass, onChange: (e) => setProjectDraft({ ...projectDraft, infoClass: e.target.value }), className: "w-full p-4 bg-slate-50 rounded-2xl border border-slate-200 font-bold text-sm outline-none" }, INFO_CLASSES.map((o) => React.createElement("option", { key: o }, o))),
+                                React.createElement("div", { className: "mt-3 rounded-2xl bg-blue-50 border border-blue-100 p-4" },
+                                    React.createElement("div", { className: "flex items-center justify-between gap-3" },
+                                        React.createElement("span", { className: "text-[10px] font-black text-[#003366] uppercase tracking-widest" }, INFO_POLICY[projectDraft.infoClass]?.title),
+                                        React.createElement(Pill, { tone: "blue" }, "\u8868\u793A\u30EB\u30FC\u30EB")),
+                                    React.createElement("p", { className: "mt-2 text-[11px] font-bold text-slate-600 leading-relaxed" }, INFO_POLICY[projectDraft.infoClass]?.text)))),
+                        React.createElement("div", null,
+                            React.createElement("label", { className: "text-[10px] font-black text-slate-400 uppercase" }, "\u696D\u52D9\u540D"),
+                            React.createElement("input", { value: projectDraft.title, onChange: (e) => setProjectDraft({ ...projectDraft, title: e.target.value }), className: "mt-2 w-full p-5 bg-slate-50 rounded-2xl border border-slate-200 text-lg font-black outline-none" })),
+                        React.createElement("div", null,
+                            React.createElement("label", { className: "text-[10px] font-black text-slate-400 uppercase" }, "\u696D\u52D9\u6982\u8981"),
+                            React.createElement("textarea", { value: projectDraft.description, onChange: (e) => setProjectDraft({ ...projectDraft, description: e.target.value }), className: "mt-2 w-full h-36 p-6 bg-slate-50 rounded-[32px] border border-slate-200 text-base font-medium leading-relaxed outline-none" })),
+                        React.createElement("div", { className: "grid grid-cols-2 gap-6" },
+                            React.createElement("div", { className: "space-y-1" },
+                                React.createElement("label", { className: "text-[10px] font-black text-slate-400 uppercase" }, "\u5FC5\u8981\u305D\u3046\u306A\u4EBA\u7269\u50CF"),
+                                React.createElement("textarea", { value: projectDraft.desired, onChange: (e) => setProjectDraft({ ...projectDraft, desired: e.target.value }), className: "w-full h-24 p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs font-bold leading-relaxed text-slate-500 outline-none" })),
+                            React.createElement("div", { className: "space-y-1" },
+                                React.createElement("label", { className: "text-[10px] font-black text-slate-400 uppercase" }, "\u6210\u679C\u7269"),
+                                React.createElement("textarea", { value: projectDraft.deliverables, onChange: (e) => setProjectDraft({ ...projectDraft, deliverables: e.target.value }), className: "w-full h-24 p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs font-bold leading-relaxed text-slate-500 outline-none" }))),
+                        isReceiver && (React.createElement("div", { className: "flex justify-center pt-6" },
+                            React.createElement("button", { onClick: handleAnalyze, className: "flex items-center gap-4 px-16 py-6 bg-[#003366] text-white rounded-[28px] font-black text-lg shadow-xl hover:scale-105 transition-all" },
+                                isAnalyzing ? React.createElement(Activity, { className: "animate-spin" }) : React.createElement(Sparkles, null),
+                                " \u696D\u52D9\u3092AI\u3067\u5206\u89E3\u3059\u308B"))))),
+                React.createElement("div", { className: `space-y-6 transition-all duration-700 ${analysis ? "opacity-100" : "opacity-30"}` },
+                    React.createElement("div", { className: "bg-white p-8 rounded-[40px] shadow-xl border-l-8 border-[#003366]" },
+                        React.createElement("h4", { className: "text-[10px] font-black text-slate-400 uppercase mb-8 flex justify-between tracking-widest" },
+                            "AI\u5206\u89E3\u7D50\u679C ",
+                            React.createElement("span", { className: "bg-[#003366] text-white px-3 py-1 rounded-full text-[8px] uppercase" }, "AI\u5206\u89E3")),
+                        !analysis ? (React.createElement("div", { className: "py-20 text-center text-slate-400 font-black" }, "\u5DE6\u306E\u30DC\u30BF\u30F3\u3067AI\u5206\u89E3\u3092\u5B9F\u884C\u3057\u3066\u304F\u3060\u3055\u3044")) : (React.createElement(React.Fragment, null,
+                            React.createElement("div", { className: "space-y-4 mb-10" }, analysis.tasks.map((t, i) => (React.createElement("div", { key: i, className: "p-4 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-start" },
+                                React.createElement("div", null,
+                                    React.createElement("p", { className: "text-[9px] font-black text-slate-400 uppercase tracking-widest" },
+                                        "\u30BF\u30B9\u30AF ",
+                                        String(i + 1).padStart(2, "0")),
+                                    React.createElement("p", { className: "mt-1 text-xs font-black text-slate-800" }, t.name),
+                                    React.createElement("p", { className: "text-[10px] font-bold text-slate-500 mt-1" },
+                                        "\u60F3\u5B9A\u6210\u679C\u7269\uFF1A",
+                                        t.output)),
+                                React.createElement(Pill, { tone: t.diff === "高" ? "amber" : "blue" },
+                                    "\u5B9F\u884C\u96E3\u6613\u5EA6\uFF1A",
+                                    t.diff))))),
+                            React.createElement("div", { className: "space-y-8 border-t pt-8 border-slate-100" },
+                                React.createElement("div", null,
+                                    React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase mb-4" }, "\u5FC5\u8981\u30B9\u30AD\u30EB\u30FB\u76EE\u5B89\u30EC\u30D9\u30EB"),
+                                    React.createElement("div", { className: "grid grid-cols-2 gap-2" }, skills.map((s) => (React.createElement("div", { key: s.name, className: "flex items-center justify-between rounded-xl bg-blue-50 border border-blue-100 px-3 py-2" },
+                                        React.createElement("span", { className: "text-[10px] font-black text-[#003366]" }, s.name),
+                                        React.createElement("span", { className: "text-[9px] font-black text-slate-500" }, s.level)))))),
+                                React.createElement("div", null,
+                                    React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase mb-4" }, "\u6210\u679C\u7269\u5019\u88DC"),
+                                    React.createElement("div", { className: "flex flex-wrap gap-2" }, deliverables.map((s) => React.createElement(Pill, { key: s, tone: "green" }, s)))),
+                                React.createElement("div", null,
+                                    React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase mb-4" }, "\u5FC5\u8981\u306A\u5F79\u5272"),
+                                    React.createElement("div", { className: "space-y-2" }, (JOB_TEMPLATES[templateKey].roleNeeds || []).map((r) => (React.createElement("div", { key: r, className: "flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2" },
+                                        React.createElement(CheckCircle2, { size: 14, className: "text-green-600" }),
+                                        React.createElement("span", { className: "text-[10px] font-black text-slate-700" }, r)))))),
+                                React.createElement("button", { onClick: handleGoToMatch, className: "w-full py-6 bg-[#003366] text-white rounded-[28px] font-black text-lg flex items-center justify-center gap-3 shadow-xl hover:scale-105 transition-all" },
+                                    "\u30C1\u30FC\u30E0\u5019\u88DC\u3092\u898B\u308B ",
+                                    React.createElement(ArrowRight, { size: 20 }))))))))),
+            activeTab === "match" && (React.createElement("div", { className: "animate-in fade-in" },
+                React.createElement("div", { className: "grid lg:grid-cols-[320px_1fr] gap-10" },
+                    React.createElement("div", { className: "space-y-6" },
+                        React.createElement(SectionCard, { title: "\u6848\u4EF6\u30B5\u30DE\u30EA\u30FC", icon: ClipboardCheck },
+                            React.createElement("div", { className: "space-y-5" },
+                                React.createElement("div", { className: "rounded-2xl bg-slate-50 border border-slate-100 p-4" },
+                                    React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u696D\u52D9\u540D"),
+                                    React.createElement("p", { className: "mt-2 text-sm font-black text-slate-800 leading-relaxed" }, projectDraft.title || "業務名未設定")),
+                                React.createElement("div", { className: "rounded-2xl bg-white border border-slate-100 p-4" },
+                                    React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u696D\u52D9\u6982\u8981"),
+                                    React.createElement("p", { className: "mt-2 text-[11px] font-bold text-slate-600 leading-relaxed" }, currentProjectSummary)),
+                                React.createElement("div", { className: "grid grid-cols-2 gap-3" },
+                                    React.createElement("div", { className: "rounded-2xl bg-slate-50 border border-slate-100 p-4" },
+                                        React.createElement("p", { className: "text-[9px] font-black text-slate-400 uppercase tracking-widest" }, "\u6848\u4EF6\u533A\u5206"),
+                                        React.createElement("p", { className: "mt-2 text-xs font-black text-slate-800 leading-relaxed" }, currentCaseMeta.category)),
+                                    React.createElement("div", { className: "rounded-2xl bg-blue-50 border border-blue-100 p-4" },
+                                        React.createElement("p", { className: "text-[9px] font-black text-[#003366] uppercase tracking-widest" }, "\u60C5\u5831\u533A\u5206"),
+                                        React.createElement("p", { className: "mt-2 text-xs font-black text-slate-800" }, projectDraft.infoClass))),
+                                React.createElement("div", { className: "grid grid-cols-2 gap-3" },
+                                    React.createElement("div", { className: "rounded-2xl bg-slate-50 border border-slate-100 p-4" },
+                                        React.createElement("p", { className: "text-[9px] font-black text-slate-400 uppercase tracking-widest" }, "\u5165\u529B\u7A2E\u5225"),
+                                        React.createElement("p", { className: "mt-2 text-xs font-black text-slate-800 leading-relaxed" }, currentTemplateLabel.replace("サンプル：", ""))),
+                                    React.createElement("div", { className: "rounded-2xl bg-green-50 border border-green-100 p-4" },
+                                        React.createElement("p", { className: "text-[9px] font-black text-green-700 uppercase tracking-widest" }, "\u5354\u50CD\u5F62\u614B"),
+                                        React.createElement("p", { className: "mt-2 text-xs font-black text-slate-800" }, currentCaseMeta.collaboration))),
+                                React.createElement("div", { className: "grid grid-cols-2 gap-3" },
+                                    React.createElement("div", { className: "rounded-2xl bg-green-50 border border-green-100 p-4" },
+                                        React.createElement("p", { className: "text-[9px] font-black text-green-700 uppercase tracking-widest" }, "\u5FC5\u8981\u30B9\u30AD\u30EB\u6570"),
+                                        React.createElement("p", { className: "mt-2 text-2xl font-black text-slate-800" }, currentRequiredSkills.length)),
+                                    React.createElement("div", { className: "rounded-2xl bg-amber-50 border border-amber-100 p-4" },
+                                        React.createElement("p", { className: "text-[9px] font-black text-amber-700 uppercase tracking-widest" }, "\u6210\u679C\u7269\u5019\u88DC"),
+                                        React.createElement("p", { className: "mt-2 text-2xl font-black text-slate-800" }, currentDeliverables.length))),
+                                React.createElement("div", { className: "rounded-2xl bg-slate-50 border border-slate-100 p-4" },
+                                    React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u9032\u3081\u65B9"),
+                                    React.createElement("p", { className: "mt-2 text-xs font-black text-slate-800 leading-relaxed" }, currentCaseMeta.flow)))),
+                        React.createElement(SectionCard, { title: "\u5019\u88DC\u8868\u793A\u306E\u6761\u4EF6", icon: ListFilter },
+                            React.createElement("div", { className: "space-y-7" },
+                                React.createElement("div", { className: "rounded-2xl bg-slate-50 border border-slate-100 p-4" },
+                                    React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u8868\u793A\u5F62\u5F0F"),
+                                    React.createElement("p", { className: "mt-2 text-sm font-black text-slate-800" }, "\u5019\u88DC\u8005\u540D\u306E\u8868\u793A\uFF1A\u81EA\u52D5\u5236\u5FA1"),
+                                    React.createElement("p", { className: "mt-2 text-[11px] font-bold leading-relaxed text-slate-600" }, "\u60C5\u5831\u533A\u5206\u3068\u8868\u793A\u30ED\u30FC\u30EB\u306B\u5FDC\u3058\u3066\u3001\u5B9F\u540D\u30FB\u53C2\u52A0\u8005ID\u30FB\u5F79\u5272\u4E2D\u5FC3\u306E\u8868\u793A\u3092\u5207\u308A\u66FF\u3048\u307E\u3059\u3002\u5916\u90E8\u5019\u88DC\u306F\u3001\u8CAC\u4EFB\u8005\u78BA\u8A8D\u304C\u7D42\u308F\u308B\u307E\u3067\u53C2\u52A0\u8005ID\u3068\u5F79\u5272\u4E2D\u5FC3\u3067\u8868\u793A\u3057\u307E\u3059\u3002")),
+                                canEditCandidateSources ? (React.createElement(React.Fragment, null,
+                                    React.createElement("div", { className: "rounded-2xl bg-blue-50 border border-blue-100 p-4" },
+                                        React.createElement("p", { className: "text-[10px] font-black text-[#003366] uppercase tracking-widest" }, "\u5019\u88DC\u306B\u542B\u3081\u308B\u53C2\u52A0\u5143"),
+                                        React.createElement("p", { className: "mt-2 text-[11px] font-bold leading-relaxed text-slate-600" }, "\u696D\u52D9\u5185\u5BB9\u30FB\u5FC5\u8981\u30B9\u30AD\u30EB\u30FB\u6210\u679C\u7269\u3068\u306E\u76F8\u6027\u3092\u898B\u308B\u305F\u3081\u3001\u5019\u88DC\u306B\u542B\u3081\u308B\u53C2\u52A0\u5143\u30FB\u77E5\u898B\u9818\u57DF\u3092\u5207\u308A\u66FF\u3048\u307E\u3059\u3002"),
+                                        React.createElement("p", { className: "mt-2 text-[11px] font-bold leading-relaxed text-slate-600" }, "\u516C\u5171\u30FB\u5730\u57DF\u77E5\u898B\u306B\u306F\u3001\u81EA\u6CBB\u4F53\u8077\u54E1\u306B\u9650\u3089\u305A\u3001\u884C\u653FDX\u3001\u5730\u57DF\u8AB2\u984C\u3001\u516C\u5171\u30B5\u30FC\u30D3\u30B9\u3001\u5B98\u6C11\u9023\u643A\u306E\u7D4C\u9A13\u3092\u6301\u3064\u4EBA\u6750\u3092\u542B\u3081\u307E\u3059\u3002"),
+                                        React.createElement("p", { className: "mt-2 text-[10px] font-black text-[#003366]" },
+                                            "\u8868\u793A\u4E2D\uFF1A",
+                                            visibleParticipants.length,
+                                            "\u540D / \u5019\u88DC\u30C1\u30FC\u30E0\uFF1A",
+                                            filteredTeams.length,
+                                            "\u6848")),
+                                    [
+                                        { label: "社内を候補に含める", value: showInternal, set: setShowInternal, color: "bg-slate-500" },
+                                        { label: "参加企業を候補に含める", value: showCompany, set: setShowCompany, color: "bg-blue-500" },
+                                        { label: "公共・地域知見を含める", value: includePublicKnowledge, set: setIncludePublicKnowledge, color: "bg-green-500" },
+                                    ].map((x) => (React.createElement("div", { key: x.label, className: "flex items-center justify-between border-t pt-5" },
+                                        React.createElement("span", { className: "text-[10px] font-black text-slate-600 uppercase" }, x.label),
+                                        React.createElement("button", { onClick: () => x.set(!x.value), className: `w-10 h-5 rounded-full relative transition-all ${x.value ? x.color : "bg-slate-200"}` },
+                                            React.createElement("div", { className: `absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${x.value ? "left-6" : "left-1"}` }))))))) : isSender ? (React.createElement("div", { className: "rounded-2xl bg-green-50 border border-green-100 p-5" },
+                                    React.createElement("p", { className: "text-[10px] font-black text-green-700 uppercase tracking-widest" }, "\u53C2\u52A0\u5074\u8CAC\u4EFB\u8005\u306E\u78BA\u8A8D\u7BC4\u56F2"),
+                                    React.createElement("p", { className: "mt-2 text-sm font-black text-slate-800" }, "\u81EA\u793E\u5019\u88DC\u306F\u5B9F\u540D\u3001\u4ED6\u7D44\u7E54\u306F\u53C2\u52A0\u8005ID\u30FB\u5F79\u5272\u4E2D\u5FC3"),
+                                    React.createElement("div", { className: "mt-4 space-y-3" }, ["自社から参加可能な候補", "担当予定範囲", "参加可否", "進め方"].map((item) => (React.createElement("div", { key: item, className: "flex items-center gap-2 rounded-xl bg-white border border-green-100 px-3 py-2" },
+                                        React.createElement(CheckCircle2, { size: 14, className: "text-green-600" }),
+                                        React.createElement("span", { className: "text-[10px] font-black text-slate-700" }, item))))))) : (React.createElement("div", { className: "rounded-2xl bg-amber-50 border border-amber-100 p-5" },
+                                    React.createElement("p", { className: "text-[10px] font-black text-amber-700 uppercase tracking-widest" }, "\u53C2\u52A0\u8005\u306E\u78BA\u8A8D\u7BC4\u56F2"),
+                                    React.createElement("p", { className: "mt-2 text-sm font-black text-slate-800" }, "\u81EA\u5206\u306E\u62C5\u5F53\u4E88\u5B9A\u7BC4\u56F2\u3068\u53C2\u52A0\u53EF\u5426\u3092\u78BA\u8A8D\u3057\u307E\u3059"),
+                                    React.createElement("div", { className: "mt-4 space-y-3" }, ["自分の担当予定範囲", "参加条件", "成果物の提出先", "参加可否回答"].map((item) => (React.createElement("div", { key: item, className: "flex items-center gap-2 rounded-xl bg-white border border-amber-100 px-3 py-2" },
+                                        React.createElement(CheckCircle2, { size: 14, className: "text-amber-600" }),
+                                        React.createElement("span", { className: "text-[10px] font-black text-slate-700" }, item))))))))),
+                        React.createElement(SectionCard, { title: "\u5019\u88DC\u306E\u898B\u65B9", icon: Info },
+                            React.createElement("p", { className: "text-xs font-bold text-slate-600 leading-relaxed" }, isReceiverSide
+                                ? "A/B/Cの候補チームは、点数順ではなく、業務内容・必要スキル・成果物との相性を説明するための案です。候補に含める参加元・知見領域を切り替え、責任者確認に進める案を選びます。"
+                                : isSender
+                                    ? "この画面では、自社から参加可能な候補と担当予定範囲を確認します。他組織の参加者は、役割と参加者IDを中心に表示します。"
+                                    : "この画面では、自分の担当予定範囲と参加可否を確認します。他メンバーは役割中心で表示します。"))),
+                    React.createElement("div", { className: "space-y-10" },
+                        React.createElement("div", { className: "px-4" },
+                            React.createElement("h2", { className: "text-2xl font-black text-slate-800 tracking-tight" }, "\u5019\u88DC\u30C1\u30FC\u30E0"),
+                            React.createElement("p", { className: "mt-3 text-sm font-bold leading-relaxed text-slate-500" }, TAB_GUIDANCE.match)),
+                        filteredTeams.map((team) => {
+                            const displayMemberIds = team.visibleMemberIds || team.memberIds;
+                            return (React.createElement("div", { key: team.id, onClick: () => setSelectedTeamId(team.id), className: `group cursor-pointer p-10 rounded-[50px] border-4 transition-all ${selectedTeamId === team.id ? "bg-white border-[#003366] shadow-2xl" : "bg-white border-transparent shadow-lg"}` },
+                                React.createElement("div", { className: "flex justify-between items-start mb-10" },
+                                    React.createElement("div", { className: "flex items-start gap-4" },
+                                        React.createElement("div", { className: `w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm ${selectedTeamId === team.id ? "bg-[#003366] text-white" : "bg-slate-100 text-slate-400"}` }, team.id),
+                                        React.createElement("div", null,
+                                            React.createElement("h4", { className: "text-xl font-black text-slate-800" }, team.name),
+                                            React.createElement("div", { className: "flex gap-2 mt-3" }, team.tags.map((tag) => React.createElement(Pill, { key: tag, tone: "amber" }, tag))))),
+                                    React.createElement("div", { className: "text-right" },
+                                        React.createElement("span", { className: "text-[10px] font-black text-slate-400 uppercase block mb-1" }, "\u5411\u3044\u3066\u3044\u308B\u7528\u9014"),
+                                        React.createElement("span", { className: "text-xl font-black text-[#003366]" }, team.bestFor))),
+                                React.createElement("div", { className: "grid md:grid-cols-[1fr_300px] gap-12" },
+                                    React.createElement("div", { className: "space-y-8" },
+                                        React.createElement("div", { className: "grid grid-cols-2 gap-4" },
+                                            displayMemberIds.map((mid) => {
+                                                const m = PARTICIPANTS.find((p) => p.id === mid);
+                                                return (React.createElement("div", { key: mid, className: "p-5 bg-slate-50 rounded-[32px] border border-slate-100 relative group-hover:bg-white transition-colors" },
+                                                    React.createElement("span", { className: "absolute top-4 right-4 px-2 py-0.5 text-[7px] font-black rounded uppercase bg-blue-100 text-blue-700" }, m.orgType),
+                                                    React.createElement("p", { className: "text-[9px] font-black text-slate-400 uppercase mb-1" }, m.role),
+                                                    React.createElement("p", { className: "text-sm font-black text-slate-800" }, getDisplayName(m)),
+                                                    React.createElement("p", { className: "mt-2 text-[10px] font-bold text-slate-400" },
+                                                        getDisplayOrg(m),
+                                                        " / ",
+                                                        m.avail)));
+                                            }),
+                                            team.hiddenMemberCount > 0 && (React.createElement("div", { className: "p-5 bg-slate-50/70 rounded-[32px] border border-dashed border-slate-200 flex items-center justify-center text-center" },
+                                                React.createElement("p", { className: "text-[10px] font-black text-slate-400 leading-relaxed" },
+                                                    "\u5019\u88DC\u6761\u4EF6\u306B\u3088\u308A",
+                                                    React.createElement("br", null),
+                                                    team.hiddenMemberCount,
+                                                    "\u540D\u3092\u975E\u8868\u793A")))),
+                                        React.createElement("div", { className: `p-6 rounded-3xl text-sm font-bold leading-relaxed border ${selectedTeamId === team.id ? "bg-blue-50/50 border-blue-100 text-slate-700" : "bg-slate-50 border-slate-100 text-slate-500"}` }, team.reason)),
+                                    React.createElement("div", { className: "bg-slate-50 p-8 rounded-[40px] border border-slate-100 h-fit" },
+                                        React.createElement("h5", { className: "text-[10px] font-black text-slate-400 uppercase mb-6 flex items-center gap-2" },
+                                            React.createElement(Building2, { size: 14 }),
+                                            " \u8CAC\u4EFB\u8005"),
+                                        React.createElement("div", { className: "space-y-6" },
+                                            displayMemberIds.map((mid) => {
+                                                const m = PARTICIPANTS.find((p) => p.id === mid);
+                                                return (React.createElement("div", { key: mid, className: "pl-4 border-l-2 border-slate-200" },
+                                                    React.createElement("p", { className: "text-xs font-black text-slate-800" }, getDisplayOrg(m)),
+                                                    React.createElement("p", { className: "text-xs font-bold text-slate-500" }, getDisplayWindow(m))));
+                                            }),
+                                            team.hiddenMemberCount > 0 && (React.createElement("div", { className: "pl-4 border-l-2 border-dashed border-slate-200 opacity-70" },
+                                                React.createElement("p", { className: "text-xs font-black text-slate-500" }, "\u975E\u8868\u793A\u306E\u8CAC\u4EFB\u8005\u3042\u308A"),
+                                                React.createElement("p", { className: "text-[10px] font-bold text-slate-400" }, "\u53C2\u52A0\u5143\u30FB\u77E5\u898B\u9818\u57DF\u3092\u5019\u88DC\u306B\u542B\u3081\u308B\u3068\u78BA\u8A8D\u3067\u304D\u307E\u3059")))),
+                                        React.createElement("div", { className: "mt-8 rounded-2xl bg-white border border-slate-100 p-4" },
+                                            React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u6B21\u306E\u78BA\u8A8D\u30EB\u30FC\u30C8"),
+                                            React.createElement("p", { className: "mt-2 text-xs font-bold leading-relaxed text-slate-600" }, "\u9078\u629E\u3057\u305F\u30C1\u30FC\u30E0\u6848\u306F\u3001\u53D7\u5165\u5074\u8CAC\u4EFB\u8005\u3068\u53C2\u52A0\u5074\u8CAC\u4EFB\u8005\u3092\u901A\u3058\u3066\u53C2\u52A0\u53EF\u5426\u3092\u78BA\u8A8D\u3057\u307E\u3059\u3002")),
+                                        React.createElement("button", { onClick: (e) => {
+                                                e.stopPropagation();
+                                                setSelectedTeamId(team.id);
+                                                setFlowStatus({ ...flowStatus, request: true });
+                                                setActiveTab("route");
+                                            }, className: "w-full mt-6 py-4 bg-[#003366] text-white rounded-2xl font-black text-xs shadow-xl" }, "\u3053\u306E\u30C1\u30FC\u30E0\u6848\u3092\u8CAC\u4EFB\u8005\u78BA\u8A8D\u3078\u9032\u3081\u308B")))));
+                        }))))),
+            activeTab === "route" && (React.createElement("div", { className: "animate-in fade-in slide-in-from-bottom-8" },
+                React.createElement("div", { className: "grid lg:grid-cols-[1fr_450px] gap-12" },
+                    React.createElement("div", { className: "bg-white p-12 rounded-[60px] shadow-2xl border border-slate-100" },
+                        React.createElement("h3", { className: "text-2xl font-black text-slate-800 mb-4 flex items-center gap-4" },
+                            React.createElement(ShieldCheck, { className: "text-green-500", size: 32 }),
+                            " \u9023\u7D61\u30EB\u30FC\u30C8\u30FB\u9032\u6357"),
+                        React.createElement("p", { className: "mb-6 text-sm font-bold leading-relaxed text-slate-500" }, TAB_GUIDANCE.route),
+                        React.createElement("div", { className: "mb-6 grid md:grid-cols-2 gap-4" },
+                            React.createElement("div", { className: "rounded-[28px] bg-slate-50 border border-slate-100 p-5" },
+                                React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u73FE\u5728\u306E\u8868\u793A\u30ED\u30FC\u30EB"),
+                                React.createElement("p", { className: "mt-2 text-lg font-black text-slate-800" }, currentRoleGuide.title),
+                                React.createElement("p", { className: "mt-2 text-xs font-bold leading-relaxed text-slate-500" }, currentRoleGuide.text)),
+                            React.createElement("div", { className: "rounded-[28px] bg-blue-50 border border-blue-100 p-5" },
+                                React.createElement("p", { className: "text-[10px] font-black text-[#003366] uppercase tracking-widest" }, "\u9078\u629E\u4E2D\u306E\u30C1\u30FC\u30E0\u6848"),
+                                React.createElement("p", { className: "mt-2 text-lg font-black text-slate-800" }, selectedTeam.name),
+                                React.createElement("p", { className: "mt-2 text-xs font-bold leading-relaxed text-slate-500" },
+                                    selectedTeam.bestFor,
+                                    "\u306B\u5411\u3044\u305F\u6848\u3068\u3057\u3066\u3001\u8CAC\u4EFB\u8005\u78BA\u8A8D\u306B\u9032\u3081\u307E\u3059\u3002"))),
+                        React.createElement("div", { className: "mb-10 grid grid-cols-[1fr_110px] gap-4 rounded-[28px] bg-blue-50 border border-blue-100 p-5" },
+                            React.createElement("div", null,
+                                React.createElement("p", { className: "text-[10px] font-black text-[#003366] uppercase tracking-widest" }, "\u73FE\u5728\u306E\u9032\u6357"),
+                                React.createElement("div", { className: "mt-3 h-3 rounded-full bg-white overflow-hidden border border-blue-100" },
+                                    React.createElement("div", { className: "h-full bg-[#003366] transition-all duration-700", style: { width: `${progressRate}%` } })),
+                                React.createElement("p", { className: "mt-2 text-xs font-bold text-slate-600" },
+                                    completedSteps,
+                                    " / ",
+                                    totalSteps,
+                                    " \u30B9\u30C6\u30C3\u30D7\u5B8C\u4E86")),
+                            React.createElement("div", { className: "flex items-center justify-center rounded-2xl bg-white border border-blue-100" },
+                                React.createElement("p", { className: "text-2xl font-black text-[#003366]" },
+                                    progressRate,
+                                    "%"))),
+                        React.createElement("div", { className: "flex flex-col items-center gap-6 py-8 relative" },
+                            React.createElement("div", { className: "absolute top-0 bottom-0 left-1/2 w-1 bg-slate-100 -translate-x-1/2" }),
+                            routeSteps.map((n) => {
+                                const done = flowStatus[n.key];
+                                return (React.createElement("div", { key: n.key, className: `relative w-[520px] max-w-full p-7 rounded-[36px] border-4 transition-all shadow-xl z-10 ${n.active ? "border-[#003366] ring-8 ring-blue-50 bg-white scale-105" : done ? "border-green-500 bg-green-50/30" : "border-white bg-slate-50 opacity-75"}` },
+                                    React.createElement("div", { className: "flex justify-between items-start mb-4" },
+                                        React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, n.label),
+                                        done ? React.createElement(Pill, { tone: "green" },
+                                            React.createElement(Check, { size: 12, className: "mr-1" }),
+                                            " \u5B8C\u4E86") : React.createElement(Pill, { tone: n.active ? "blue" : "slate" }, n.active ? "このロールで操作" : "待機中")),
+                                    React.createElement("p", { className: `text-md font-black ${n.active ? "text-slate-800" : "text-slate-500"}` }, n.action),
+                                    React.createElement("p", { className: "mt-2 text-[11px] font-bold leading-relaxed text-slate-500" }, n.detail),
+                                    React.createElement("div", { className: "mt-5 grid md:grid-cols-2 gap-3" },
+                                        React.createElement("div", { className: `rounded-2xl border px-4 py-3 ${n.downloadReady ? "bg-white border-blue-100" : "bg-slate-50 border-slate-100 opacity-60"}` },
+                                            React.createElement("p", { className: "text-[9px] font-black text-slate-400 uppercase tracking-widest" }, "\u53D7\u3051\u53D6\u308B\u8CC7\u6599"),
+                                            React.createElement("p", { className: "mt-1 text-[11px] font-black text-slate-700" }, n.downloadDoc),
+                                            React.createElement("button", { className: `mt-3 w-full flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[10px] font-black ${n.downloadReady ? "border-blue-100 bg-blue-50 text-[#003366]" : "border-slate-200 bg-white text-slate-400"}` },
+                                                React.createElement(Download, { size: 13 }),
+                                                " \u8CC7\u6599\u3092\u78BA\u8A8D")),
+                                        React.createElement("div", { className: "rounded-2xl border border-green-100 bg-white px-4 py-3" },
+                                            React.createElement("p", { className: "text-[9px] font-black text-slate-400 uppercase tracking-widest" }, "\u6DFB\u4ED8\u30FB\u66F4\u65B0\u3059\u308B\u8CC7\u6599"),
+                                            React.createElement("p", { className: "mt-1 text-[11px] font-black text-slate-700" }, n.uploadDoc),
+                                            React.createElement("button", { className: "mt-3 w-full flex items-center justify-center gap-2 rounded-xl border border-green-100 bg-green-50 px-3 py-2 text-[10px] font-black text-green-700" },
+                                                React.createElement(Upload, { size: 13 }),
+                                                " \u6DFB\u4ED8\u3059\u308B"))),
+                                    React.createElement("div", { className: "mt-5 flex items-start gap-3 rounded-2xl bg-white border border-slate-100 px-4 py-3" },
+                                        React.createElement(ClipboardCheck, { size: 15, className: "mt-0.5 text-slate-400" }),
+                                        React.createElement("p", { className: "text-[10px] font-bold leading-relaxed text-slate-500" }, "\u8CC7\u6599\u306E\u78BA\u8A8D\u30FB\u6DFB\u4ED8\u30FB\u6B21\u5DE5\u7A0B\u3078\u306E\u9001\u4ED8\u306F\u3001\u5F8C\u304B\u3089\u78BA\u8A8D\u3067\u304D\u308B\u8A18\u9332\u3068\u3057\u3066\u4FDD\u5B58\u3055\u308C\u307E\u3059\u3002")),
+                                    n.active && !done && React.createElement("button", { onClick: () => setFlowStatus({ ...flowStatus, [n.key]: true }), className: `mt-4 w-full py-4 ${n.color} text-white rounded-2xl font-black text-xs shadow-lg flex items-center justify-center gap-2` },
+                                        React.createElement(Send, { size: 14 }),
+                                        " ",
+                                        n.btn)));
+                            }))),
+                    React.createElement("div", { className: "space-y-8" },
+                        React.createElement(SectionCard, { title: "\u8CC7\u6599\u9023\u643A\u306E\u6D41\u308C", icon: FileCheck2 },
+                            React.createElement("div", { className: "space-y-4" },
+                                React.createElement("div", { className: "rounded-2xl bg-blue-50 border border-blue-100 p-4" },
+                                    React.createElement("p", { className: "text-xs font-black text-slate-800" }, "1. \u524D\u5DE5\u7A0B\u306E\u8CC7\u6599\u3092\u78BA\u8A8D"),
+                                    React.createElement("p", { className: "mt-1 text-[10px] font-bold text-slate-500 leading-relaxed" }, "\u901A\u77E5\u3092\u53D7\u3051\u305F\u62C5\u5F53\u8005\u306F\u3001\u524D\u5DE5\u7A0B\u3067\u6DFB\u4ED8\u3055\u308C\u305F\u8CC7\u6599\u3092\u78BA\u8A8D\u3057\u307E\u3059\u3002")),
+                                React.createElement("div", { className: "rounded-2xl bg-green-50 border border-green-100 p-4" },
+                                    React.createElement("p", { className: "text-xs font-black text-slate-800" }, "2. \u78BA\u8A8D\u7D50\u679C\u3092\u6DFB\u4ED8"),
+                                    React.createElement("p", { className: "mt-1 text-[10px] font-bold text-slate-500 leading-relaxed" }, "\u78BA\u8A8D\u30E1\u30E2\u30FB\u4FEE\u6B63\u7248\u30FB\u6210\u679C\u7269\u3092\u6DFB\u4ED8\u3057\u3066\u3001\u6B21\u306E\u8CAC\u4EFB\u8005\u307E\u305F\u306F\u62C5\u5F53\u8005\u3078\u9001\u308A\u307E\u3059\u3002")),
+                                React.createElement("div", { className: "rounded-2xl bg-slate-50 border border-slate-100 p-4" },
+                                    React.createElement("p", { className: "text-xs font-black text-slate-800" }, "3. \u8A18\u9332\u3068\u3057\u3066\u4FDD\u5B58"),
+                                    React.createElement("p", { className: "mt-1 text-[10px] font-bold text-slate-500 leading-relaxed" }, "\u8AB0\u304C\u3001\u3069\u306E\u8CC7\u6599\u3092\u78BA\u8A8D\u30FB\u6DFB\u4ED8\u3057\u305F\u304B\u3092\u3001\u696D\u52D9\u5358\u4F4D\u3067\u5F8C\u304B\u3089\u78BA\u8A8D\u3067\u304D\u308B\u72B6\u614B\u306B\u3057\u307E\u3059\u3002")))),
+                        React.createElement(SectionCard, { title: "\u30BF\u30B9\u30AF\u5225\u9032\u6357", icon: Activity, badge: "\u9032\u884C\u4E2D" },
+                            React.createElement("div", { className: "space-y-10" }, (analysis?.tasks || JOB_TEMPLATES[templateKey].tasks).map((t, i) => (React.createElement("div", { key: i },
+                                React.createElement("div", { className: "flex justify-between items-end mb-4" },
+                                    React.createElement("span", { className: "text-sm font-black text-slate-800" }, t.name),
+                                    React.createElement("span", { className: "text-2xl font-black text-[#003366]" },
+                                        t.progress,
+                                        "%")),
+                                React.createElement("div", { className: "w-full bg-slate-100 h-3 rounded-full overflow-hidden" },
+                                    React.createElement("div", { className: `h-full transition-all duration-1000 ${t.progress === 100 ? "bg-green-500" : "bg-[#003366]"}`, style: { width: `${t.progress}%` } }))))))),
+                        React.createElement(SectionCard, { title: "\u8A18\u9332", icon: History },
+                            React.createElement("div", { className: "space-y-3" }, routeSteps.map((step) => {
+                                const done = flowStatus[step.key];
+                                return (React.createElement("div", { key: step.key, className: "rounded-2xl bg-slate-50 border border-slate-100 px-4 py-3" },
+                                    React.createElement("div", { className: "flex items-center justify-between gap-3" },
+                                        React.createElement("span", { className: "text-xs font-black text-slate-700" }, step.logLabel),
+                                        done ? React.createElement(Pill, { tone: "green" }, "\u4FDD\u5B58\u6E08\u307F") : React.createElement(Pill, { tone: "slate" }, "\u672A")),
+                                    React.createElement("p", { className: "mt-1 text-[10px] font-bold text-slate-400" },
+                                        "\u6DFB\u4ED8\uFF1A",
+                                        step.uploadDoc)));
+                            }))))))),
+            activeTab === "outcome" && (React.createElement("div", { className: "animate-in fade-in" }, isParticipant ? (React.createElement("div", { className: "grid lg:grid-cols-[1fr_470px] gap-10" },
+                React.createElement("div", { className: "bg-white p-12 rounded-[60px] shadow-2xl border border-slate-100" },
+                    React.createElement("h2", { className: "text-3xl font-black text-slate-800 mb-4" }, "\u73FE\u72B6\u3068\u76EE\u6A19\u30AD\u30E3\u30EA\u30A2\u304B\u3089\u5B66\u7FD2\u30FB\u5B9F\u52D9\u3092\u9078\u3076"),
+                    React.createElement("p", { className: "mb-8 text-sm font-bold leading-relaxed text-slate-500" }, "\u3053\u306E\u753B\u9762\u306F\u53C2\u52A0\u8005\u672C\u4EBA\u5411\u3051\u3067\u3059\u3002JD\u3067\u306F\u306A\u304F\u3001\u672C\u4EBA\u30D7\u30ED\u30D5\u30A3\u30FC\u30EB\u4E0A\u306E\u73FE\u5728\u306E\u8077\u52D9\u30FB\u5F79\u5272\u3068\u3001\u4F1A\u793E\u30FB\u672C\u4EBA\u304C\u76EE\u6307\u3059\u30AD\u30E3\u30EA\u30A2\u3068\u306E\u5DEE\u5206\u3092\u78BA\u8A8D\u3057\u3001\u304A\u3059\u3059\u3081\u6559\u6750\u3068\u30B9\u30AD\u30EB\u30A2\u30C3\u30D7\u3067\u304D\u308B\u696D\u52D9\u3078\u9032\u307F\u307E\u3059\u3002\u5B66\u7FD2\u307E\u305F\u306F\u696D\u52D9\u304C\u7D42\u308F\u3063\u305F\u3089\u3001\u518D\u5EA6\u3053\u306E\u753B\u9762\u306B\u623B\u3063\u3066\u5230\u9054\u5EA6\u3068\u6B21\u306E\u5019\u88DC\u3092\u78BA\u8A8D\u3057\u307E\u3059\u3002"),
+                    React.createElement("div", { className: "mb-6 rounded-[36px] bg-slate-50 border border-slate-100 p-7" },
+                        React.createElement("div", { className: "flex items-center justify-between gap-4 mb-5" },
+                            React.createElement("div", null,
+                                React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u4ECA\u56DE\u306E\u5BFE\u8C61\u696D\u52D9"),
+                                React.createElement("h3", { className: "mt-2 text-xl font-black text-slate-800" }, projectDraft.title || "業務名未設定")),
+                            React.createElement("div", { className: "flex flex-wrap gap-2 justify-end" },
+                                React.createElement(Pill, { tone: "blue" }, currentCaseMeta.category),
+                                React.createElement(Pill, { tone: "slate" }, currentCaseMeta.collaboration))),
+                        React.createElement("p", { className: "text-xs font-bold leading-relaxed text-slate-600" }, projectDraft.description || "業務概要が未入力です。"),
+                        React.createElement("div", { className: "mt-5 rounded-2xl bg-white border border-slate-100 p-4" },
+                            React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u3053\u306E\u696D\u52D9\u306E\u4F4D\u7F6E\u3065\u3051"),
+                            React.createElement("p", { className: "mt-1 text-xs font-bold leading-relaxed text-slate-600" }, "\u3053\u306E\u696D\u52D9\u5185\u5BB9\u306F\u5354\u696D\u306E\u6848\u4EF6\u60C5\u5831\u3067\u3059(\u6C42\u4EBA\u60C5\u5831\u3067\u306F\u3042\u308A\u307E\u305B\u3093)\u3002\u4E0B\u306E\u300C\u73FE\u5728\u306E\u8077\u52D9\u30FB\u5F79\u5272\u300D\u300C\u76EE\u6307\u3059\u30AD\u30E3\u30EA\u30A2\u300D\u306F\u3001\u53C2\u52A0\u8005\u672C\u4EBA\u306E\u30D7\u30ED\u30D5\u30A3\u30FC\u30EB\u3068\u4F1A\u793E\u30FB\u672C\u4EBA\u306E\u30AD\u30E3\u30EA\u30A2\u76EE\u6A19\u304B\u3089\u8868\u793A\u3057\u3066\u3044\u307E\u3059\u3002"))),
+                    React.createElement("div", { className: "mb-8 rounded-[36px] bg-blue-50/60 border border-blue-100 p-7" },
+                        React.createElement("div", { className: "flex items-center justify-between gap-4 mb-5" },
+                            React.createElement("div", null,
+                                React.createElement("p", { className: "text-[10px] font-black text-[#003366] uppercase tracking-widest" }, "\u672C\u4EBA\u30D7\u30ED\u30D5\u30A3\u30FC\u30EB\u3068\u76EE\u6A19\u30AD\u30E3\u30EA\u30A2"),
+                                React.createElement("h3", { className: "mt-2 text-xl font-black text-slate-800" }, "JD\u3067\u306F\u306A\u304F\u3001\u672C\u4EBA\u306E\u73FE\u5728\u5730\u3068\u76EE\u6307\u3059\u5F79\u5272\u3092\u8868\u793A")),
+                            React.createElement(Pill, { tone: "blue" }, "\u672C\u4EBA\u306E\u307F\u8868\u793A")),
+                        React.createElement("div", { className: "grid md:grid-cols-3 gap-4" },
+                            React.createElement("div", { className: "rounded-2xl bg-white border border-blue-100 p-4" },
+                                React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u73FE\u5728\u306E\u8077\u52D9\u30FB\u5F79\u5272"),
+                                React.createElement("p", { className: "mt-1 text-sm font-black text-slate-800" }, currentCareerLearning.currentRole)),
+                            React.createElement("div", { className: "rounded-2xl bg-white border border-blue-100 p-4" },
+                                React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u76EE\u6307\u3059\u30AD\u30E3\u30EA\u30A2"),
+                                React.createElement("p", { className: "mt-1 text-sm font-black text-[#003366]" }, currentCareerLearning.targetRole)),
+                            React.createElement("div", { className: "rounded-2xl bg-white border border-blue-100 p-4" },
+                                React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u76EE\u6A19\u306E\u51FA\u3069\u3053\u308D"),
+                                React.createElement("p", { className: "mt-1 text-xs font-bold leading-relaxed text-slate-600" }, currentCareerLearning.targetSource)))),
+                    React.createElement("div", { className: "grid md:grid-cols-[220px_1fr] gap-6 mb-8" },
+                        React.createElement("div", { className: "rounded-[32px] bg-blue-50 border border-blue-100 p-6 text-center" },
+                            React.createElement("p", { className: "text-[10px] font-black text-[#003366] uppercase tracking-widest" }, "\u30AD\u30E3\u30EA\u30A2\u5230\u9054\u5EA6"),
+                            React.createElement("p", { className: "mt-3 text-5xl font-black text-[#003366]" },
+                                currentCareerLearning.matchRate,
+                                "%"),
+                            React.createElement("div", { className: "mt-4 h-3 rounded-full bg-white border border-blue-100 overflow-hidden" },
+                                React.createElement("div", { className: "h-full bg-[#003366]", style: { width: `${currentCareerLearning.matchRate}%` } })),
+                            React.createElement("p", { className: "mt-3 text-[10px] font-bold text-slate-500 leading-relaxed" }, "\u672C\u4EBA\u30D7\u30ED\u30D5\u30A3\u30FC\u30EB\u4E0A\u306E\u73FE\u5728\u5730\u3068\u76EE\u6307\u3059\u30AD\u30E3\u30EA\u30A2\u3068\u306E\u5DEE\u5206\u304B\u3089\u7B97\u51FA\u3057\u305F\u76EE\u5B89\u3067\u3059\u3002")),
+                        React.createElement("div", { className: "rounded-[32px] bg-slate-50 border border-slate-100 p-6" },
+                            React.createElement("p", { className: "text-sm font-black text-slate-800" }, "\u73FE\u72B6\u306E\u6574\u7406"),
+                            React.createElement("p", { className: "mt-3 text-xs font-bold leading-relaxed text-slate-600" }, currentCareerLearning.currentSummary),
+                            React.createElement("div", { className: "mt-5 flex flex-wrap gap-2" }, currentCareerLearning.matchedSkills.map((skill) => React.createElement(Pill, { key: skill, tone: "green" }, skill))))),
+                    React.createElement("div", { className: "mb-8 rounded-[36px] bg-white border border-slate-100 p-7 shadow-sm" },
+                        React.createElement("div", { className: "flex items-center justify-between gap-4 mb-6" },
+                            React.createElement("div", null,
+                                React.createElement("p", { className: "text-sm font-black text-slate-800" }, "\u30B9\u30AD\u30EB\u30AE\u30E3\u30C3\u30D7"),
+                                React.createElement("p", { className: "mt-1 text-[11px] font-bold text-slate-500" }, "\u76EE\u6307\u3059\u30AD\u30E3\u30EA\u30A2\u306B\u5BFE\u3057\u3066\u3001\u6559\u6750\u3068\u5B9F\u52D9\u3067\u88DC\u3046\u3079\u304D\u30B9\u30AD\u30EB\u3092\u6574\u7406\u3057\u307E\u3059\u3002")),
+                            React.createElement(Pill, { tone: "amber" }, "\u672C\u4EBA\u5411\u3051")),
+                        React.createElement("div", { className: "space-y-4" }, currentCareerLearning.gapSkills.map((g) => (React.createElement("div", { key: g.skill, className: "rounded-2xl bg-slate-50 border border-slate-100 p-4" },
+                            React.createElement("div", { className: "flex items-center justify-between gap-3" },
+                                React.createElement("p", { className: "text-sm font-black text-slate-800" }, g.skill),
+                                React.createElement("div", { className: "flex items-center gap-2 text-[10px] font-black text-slate-500" },
+                                    React.createElement("span", null, g.current),
+                                    React.createElement(ArrowRight, { size: 13 }),
+                                    React.createElement("span", { className: "text-[#003366]" }, g.target))),
+                            React.createElement("p", { className: "mt-2 text-[10px] font-bold leading-relaxed text-slate-500" },
+                                "\u7406\u7531\uFF1A",
+                                g.reason)))))),
+                    React.createElement("div", { className: "rounded-[36px] bg-amber-50 border border-amber-100 p-7" },
+                        React.createElement("div", { className: "flex items-center justify-between gap-4 mb-5" },
+                            React.createElement("div", null,
+                                React.createElement("p", { className: "text-sm font-black text-slate-800" }, "\u30B9\u30AD\u30EB\u30A2\u30C3\u30D7\u306E\u6D41\u308C"),
+                                React.createElement("p", { className: "mt-1 text-[11px] font-bold text-slate-500" }, "\u672C\u4EBA\u30D7\u30ED\u30D5\u30A3\u30FC\u30EB\u4E0A\u306E\u73FE\u5728\u5730\u304B\u3089\u3001\u6559\u6750\u5B66\u7FD2\u3001\u5B9F\u52D9\u6311\u6226\u3001\u5B8C\u4E86\u5F8C\u306E\u518D\u78BA\u8A8D\u307E\u3067\u3092\u9032\u6357\u8868\u793A\u3057\u307E\u3059\u3002")),
+                            React.createElement(Pill, { tone: "amber" }, "\u9032\u884C\u4E2D")),
+                        React.createElement("div", { className: "grid md:grid-cols-4 gap-3" }, learningFlowSteps.map((step) => (React.createElement("div", { key: step.no, className: `rounded-2xl border p-4 ${progressToneClass(step.tone)}` },
+                            React.createElement("div", { className: "flex items-center justify-between gap-2 mb-3" },
+                                React.createElement("div", { className: "w-8 h-8 rounded-xl bg-white/80 flex items-center justify-center font-black text-[10px]" }, step.no),
+                                React.createElement("span", { className: "px-2 py-1 rounded-full bg-white/80 text-[9px] font-black" }, step.status)),
+                            React.createElement("p", { className: "text-xs font-black text-slate-800" }, step.title),
+                            React.createElement("p", { className: "mt-2 text-[10px] font-black leading-relaxed" }, step.main),
+                            React.createElement("div", { className: "mt-3 h-2 rounded-full bg-white/80 overflow-hidden" },
+                                React.createElement("div", { className: `h-full ${progressBarClass(step.tone)}`, style: { width: `${step.percent}%` } })),
+                            React.createElement("p", { className: "mt-2 text-[10px] font-bold leading-relaxed text-slate-500" }, step.sub))))))),
+                React.createElement("div", { className: "space-y-8" },
+                    React.createElement(SectionCard, { title: "\u304A\u3059\u3059\u3081\u6559\u6750", icon: BarChart3 },
+                        React.createElement("p", { className: "text-sm font-bold text-slate-600 leading-relaxed mb-6" }, "\u76EE\u6A19\u30AD\u30E3\u30EA\u30A2\u3068\u306E\u30AE\u30E3\u30C3\u30D7\u3092\u57CB\u3081\u308B\u305F\u3081\u306E\u63D0\u643A\u6559\u6750\u3067\u3059\u3002\u6559\u6750\u3054\u3068\u306B\u5B66\u7FD2\u72B6\u6CC1\u3092\u8868\u793A\u3057\u3001\u5B8C\u4E86\u5F8C\u306F\u3053\u306E\u753B\u9762\u306B\u623B\u3063\u3066\u73FE\u72B6\u30B9\u30AD\u30EB\u3092\u518D\u78BA\u8A8D\u3057\u307E\u3059\u3002"),
+                        React.createElement("div", { className: "space-y-4" }, currentCareerLearning.courses.map((item, index) => {
+                            const progress = getCourseProgress(index);
+                            return (React.createElement("div", { key: item.title, className: `rounded-2xl border p-4 ${progressToneClass(progress.tone)}` },
+                                React.createElement("div", { className: "flex items-start justify-between gap-3" },
+                                    React.createElement("div", null,
+                                        React.createElement("div", { className: "flex flex-wrap items-center gap-2" },
+                                            React.createElement("span", { className: "px-2 py-1 rounded-lg bg-white/80 text-[9px] font-black" }, progress.code),
+                                            React.createElement("span", { className: "px-2 py-1 rounded-full bg-white/80 text-[9px] font-black" }, progress.status)),
+                                        React.createElement("p", { className: "mt-3 text-sm font-black text-slate-800" }, item.title)),
+                                    React.createElement("div", { className: "text-right" },
+                                        React.createElement("p", { className: "text-2xl font-black text-[#003366]" },
+                                            progress.percent,
+                                            "%"),
+                                        React.createElement("p", { className: "text-[9px] font-black text-slate-400" }, item.time))),
+                                React.createElement("div", { className: "mt-3 h-2.5 rounded-full bg-white/80 overflow-hidden border border-white" },
+                                    React.createElement("div", { className: `h-full ${progressBarClass(progress.tone)}`, style: { width: `${progress.percent}%` } })),
+                                React.createElement("p", { className: "mt-3 text-[10px] font-black text-slate-500" },
+                                    item.provider,
+                                    " / \u5BFE\u8C61\uFF1A",
+                                    item.skill),
+                                React.createElement("p", { className: "mt-2 text-[10px] font-bold leading-relaxed text-slate-600" },
+                                    "\u5B66\u7FD2\u72B6\u6CC1\uFF1A",
+                                    progress.detail),
+                                React.createElement("p", { className: "mt-2 text-[10px] font-bold leading-relaxed text-slate-500" },
+                                    "\u7406\u7531\uFF1A",
+                                    item.reason),
+                                React.createElement("div", { className: "mt-4 grid grid-cols-[1fr_auto] gap-3 items-center" },
+                                    React.createElement("p", { className: "text-[10px] font-bold text-slate-500" }, "\u5B8C\u4E86\u5F8C\uFF1A\u3053\u306E\u753B\u9762\u3078\u623B\u308A\u3001\u30AD\u30E3\u30EA\u30A2\u5230\u9054\u5EA6\u3068\u30B9\u30AD\u30EB\u30AE\u30E3\u30C3\u30D7\u3092\u66F4\u65B0"),
+                                    React.createElement("button", { className: "px-4 py-2 rounded-xl bg-[#003366] text-white text-[10px] font-black flex items-center gap-2" },
+                                        progress.action,
+                                        " ",
+                                        React.createElement(ArrowRight, { size: 13 })))));
+                        }))),
+                    React.createElement(SectionCard, { title: "\u30B9\u30AD\u30EB\u30A2\u30C3\u30D7\u3067\u304D\u308B\u696D\u52D9", icon: ClipboardCheck },
+                        React.createElement("p", { className: "text-sm font-bold text-slate-600 leading-relaxed mb-6" }, "\u73FE\u5728\u306E\u30B9\u30AD\u30EB\u30B3\u30DF\u30E5\u30CB\u30C6\u30A3\u4E0A\u3067\u3001\u5BFE\u8C61\u30B9\u30AD\u30EB\u3092\u5B9F\u52D9\u3067\u4F38\u3070\u305B\u308B\u696D\u52D9\u5019\u88DC\u3067\u3059\u3002\u53C2\u52A0\u7533\u8ACB\u6E96\u5099\u3001\u5B9F\u8DF5\u4E2D\u3001\u5B8C\u4E86\u6E08\u307F\u3092\u5206\u3051\u3066\u8868\u793A\u3057\u3001\u696D\u52D9\u5B8C\u4E86\u5F8C\u306F\u3053\u306E\u753B\u9762\u3067\u5230\u9054\u5EA6\u3092\u518D\u78BA\u8A8D\u3057\u307E\u3059\u3002"),
+                        React.createElement("div", { className: "space-y-4" }, currentCareerLearning.practiceTasks.map((item, index) => {
+                            const progress = getPracticeProgress(index);
+                            return (React.createElement("div", { key: item.title, className: `rounded-2xl border p-4 ${progressToneClass(progress.tone)}` },
+                                React.createElement("div", { className: "flex items-start justify-between gap-3" },
+                                    React.createElement("div", { className: "flex items-start gap-3" },
+                                        React.createElement("div", { className: "w-9 h-9 rounded-xl bg-white/80 text-[#003366] flex items-center justify-center font-black text-[10px]" }, progress.code.replace("業務", "業")),
+                                        React.createElement("div", null,
+                                            React.createElement("div", { className: "flex flex-wrap items-center gap-2" },
+                                                React.createElement("span", { className: "px-2 py-1 rounded-full bg-white/80 text-[9px] font-black" }, progress.status),
+                                                React.createElement("span", { className: "px-2 py-1 rounded-full bg-white/80 text-[9px] font-black" }, item.skill)),
+                                            React.createElement("p", { className: "mt-3 text-xs font-black text-slate-800" }, item.title))),
+                                    React.createElement("div", { className: "text-right" },
+                                        React.createElement("p", { className: "text-2xl font-black text-[#003366]" },
+                                            progress.percent,
+                                            "%"),
+                                        React.createElement("p", { className: "text-[9px] font-black text-slate-400" }, "\u9032\u6357"))),
+                                React.createElement("div", { className: "mt-3 h-2.5 rounded-full bg-white/80 overflow-hidden border border-white" },
+                                    React.createElement("div", { className: `h-full ${progressBarClass(progress.tone)}`, style: { width: `${progress.percent}%` } })),
+                                React.createElement("p", { className: "mt-3 text-[10px] font-bold text-slate-500" },
+                                    item.source,
+                                    " / \u4F38\u3070\u3059\u30B9\u30AD\u30EB\uFF1A",
+                                    item.skill),
+                                React.createElement("p", { className: "mt-2 text-[10px] font-black text-[#003366]" },
+                                    "\u6210\u679C\u7269\uFF1A",
+                                    item.output),
+                                React.createElement("p", { className: "mt-2 text-[10px] font-bold leading-relaxed text-slate-600" },
+                                    "\u9032\u884C\u72B6\u6CC1\uFF1A",
+                                    progress.detail),
+                                React.createElement("p", { className: "mt-2 text-[10px] font-bold leading-relaxed text-slate-500" },
+                                    "\u7406\u7531\uFF1A",
+                                    item.reason),
+                                React.createElement("div", { className: "mt-4 grid grid-cols-[1fr_auto] gap-3 items-center" },
+                                    React.createElement("p", { className: "text-[10px] font-bold text-slate-500" }, "\u5B8C\u4E86\u5F8C\uFF1A\u6210\u679C\u7269\u30FB\u632F\u308A\u8FD4\u308A\u3092\u767B\u9332\u3057\u3001\u3053\u306E\u753B\u9762\u3067\u73FE\u72B6\u30B9\u30AD\u30EB\u3092\u66F4\u65B0"),
+                                    React.createElement("button", { className: "px-4 py-2 rounded-xl bg-[#003366] text-white text-[10px] font-black flex items-center gap-2" },
+                                        progress.action,
+                                        " ",
+                                        React.createElement(ArrowRight, { size: 13 })))));
+                        }))),
+                    React.createElement(SectionCard, { title: "\u8868\u793A\u7BC4\u56F2", icon: Info },
+                        React.createElement("div", { className: "rounded-[28px] bg-blue-50 border border-blue-100 p-8 text-center" },
+                            React.createElement(Lock, { size: 44, className: "mx-auto text-[#003366] mb-4" }),
+                            React.createElement("p", { className: "text-sm font-black text-slate-800" }, "\u3053\u306E\u5B66\u7FD2\u63D0\u6848\u306F\u53C2\u52A0\u8005\u672C\u4EBA\u306E\u307F\u8868\u793A\u3057\u307E\u3059\u3002"),
+                            React.createElement("p", { className: "mt-2 text-xs font-bold text-slate-500 leading-relaxed" }, "\u73FE\u72B6\u30B9\u30AD\u30EB\u3001\u76EE\u6A19\u30AD\u30E3\u30EA\u30A2\u3001\u6559\u6750\u63D0\u6848\u3001\u53C2\u52A0\u7533\u8ACB\u4E88\u5B9A\u306E\u696D\u52D9\u3001\u5B66\u7FD2\u30FB\u5B9F\u52D9\u306E\u9032\u6357\u306F\u500B\u4EBA\u306B\u7D10\u3065\u304F\u60C5\u5831\u306E\u305F\u3081\u3001\u696D\u52D9\u62C5\u5F53\u8005\u30FB\u53D7\u5165\u5074\u8CAC\u4EFB\u8005\u30FB\u53C2\u52A0\u5074\u8CAC\u4EFB\u8005\u306B\u306F\u8868\u793A\u3057\u307E\u305B\u3093\u3002"))),
+                    React.createElement("button", { className: "w-full py-4 rounded-2xl bg-[#003366] text-white text-xs font-black flex items-center justify-center gap-2" },
+                        React.createElement(Download, { size: 15 }),
+                        " \u81EA\u5206\u7528\u306B\u5B66\u7FD2\u30FB\u5B9F\u52D9\u63D0\u6848\u3092CSV\u51FA\u529B")))) : (React.createElement("div", { className: "grid lg:grid-cols-[1fr_450px] gap-10" },
+                React.createElement("div", { className: "bg-white p-12 rounded-[60px] shadow-2xl border border-slate-100" },
+                    React.createElement("h2", { className: "text-3xl font-black text-slate-800 mb-4" }, "\u6210\u679C\u7269\u30FB\u5B8C\u4E86\u78BA\u8A8D"),
+                    React.createElement("p", { className: "mb-8 text-sm font-bold leading-relaxed text-slate-500" }, "\u3053\u306E\u753B\u9762\u3067\u306F\u3001\u63D0\u51FA\u3055\u308C\u305F\u6210\u679C\u7269\u3068\u30D7\u30ED\u30B8\u30A7\u30AF\u30C8\u5168\u4F53\u306E\u632F\u308A\u8FD4\u308A\u3092\u78BA\u8A8D\u3057\u307E\u3059\u3002\u53C2\u52A0\u8005\u500B\u4EBA\u306E\u73FE\u72B6\u30B9\u30AD\u30EB\u3001\u76EE\u6A19\u30AD\u30E3\u30EA\u30A2\u3001\u5B66\u7FD2\u8A08\u753B\u306F\u8868\u793A\u3057\u307E\u305B\u3093\u3002"),
+                    React.createElement("div", { className: "mb-8 rounded-[36px] bg-slate-50 border border-slate-100 p-7" },
+                        React.createElement("div", { className: "flex items-center justify-between gap-4 mb-5" },
+                            React.createElement("div", null,
+                                React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u5BFE\u8C61\u696D\u52D9"),
+                                React.createElement("h3", { className: "mt-2 text-xl font-black text-slate-800" }, projectDraft.title || "業務名未設定")),
+                            React.createElement("div", { className: "flex flex-wrap gap-2 justify-end" },
+                                React.createElement(Pill, { tone: "blue" }, currentCaseMeta.category),
+                                React.createElement(Pill, { tone: "slate" }, currentCaseMeta.collaboration))),
+                        React.createElement("p", { className: "text-xs font-bold leading-relaxed text-slate-600" }, projectDraft.description || "業務概要が未入力です。"),
+                        React.createElement("div", { className: "mt-5 grid md:grid-cols-3 gap-4" },
+                            React.createElement("div", { className: "rounded-2xl bg-white border border-slate-100 p-4" },
+                                React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u9078\u629E\u30C1\u30FC\u30E0"),
+                                React.createElement("p", { className: "mt-1 text-sm font-black text-slate-800" }, selectedTeam?.name || "未選択")),
+                            React.createElement("div", { className: "rounded-2xl bg-white border border-slate-100 p-4" },
+                                React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u6210\u679C\u7269"),
+                                React.createElement("p", { className: "mt-1 text-sm font-black text-[#003366]" },
+                                    (deliverables.length || projectDraft.deliverables.split("、").filter(Boolean).length || 0),
+                                    "\u4EF6")),
+                            React.createElement("div", { className: "rounded-2xl bg-white border border-slate-100 p-4" },
+                                React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, "\u5B8C\u4E86\u72B6\u6CC1"),
+                                React.createElement("p", { className: "mt-1 text-sm font-black text-slate-800" }, flowStatus.complete ? "完了確認済み" : "確認待ち")))),
+                    React.createElement("div", { className: "grid md:grid-cols-3 gap-5 mb-10" }, [
+                        { label: "成果物", value: deliverables.length || JOB_TEMPLATES[templateKey].deliverables.split("、").filter(Boolean).length, sub: "登録候補" },
+                        { label: "完了記録", value: flowStatus.complete ? "完了" : "未完了", sub: "対象業務" },
+                        { label: "確認記録", value: "2件", sub: "受入側/参加側" },
+                    ].map((s) => (React.createElement("div", { key: s.label, className: "p-6 bg-slate-50 rounded-[32px] border border-slate-100 text-center" },
+                        React.createElement("p", { className: "text-[10px] font-black text-slate-400 uppercase tracking-widest" }, s.label),
+                        React.createElement("p", { className: "text-3xl font-black text-[#003366] mt-2" }, s.value),
+                        React.createElement("p", { className: "text-xs font-bold text-slate-500 mt-1" }, s.sub))))),
+                    React.createElement("div", { className: "mb-8 rounded-[36px] bg-white border border-slate-100 p-7 shadow-sm" },
+                        React.createElement("div", { className: "flex items-center justify-between gap-4 mb-6" },
+                            React.createElement("div", null,
+                                React.createElement("p", { className: "text-sm font-black text-slate-800" }, "\u6210\u679C\u7269\u30D5\u30A1\u30AF\u30C8"),
+                                React.createElement("p", { className: "mt-1 text-[11px] font-bold text-slate-500" }, "\u63D0\u51FA\u7269\u3001\u5B8C\u4E86\u72B6\u614B\u3001\u5B9F\u52D9\u3067\u306E\u4F7F\u3044\u65B9\u3092\u78BA\u8A8D\u3057\u307E\u3059\u3002")),
+                            React.createElement(Pill, { tone: "green" }, "\u6210\u679C\u7269\u4E2D\u5FC3")),
+                        React.createElement("div", { className: "space-y-3" }, (deliverables.length ? deliverables : projectDraft.deliverables.split("、").filter(Boolean)).map((item, idx) => (React.createElement("div", { key: `${item}-${idx}`, className: "flex items-center justify-between gap-4 rounded-2xl bg-slate-50 border border-slate-100 px-4 py-3" },
+                            React.createElement("div", null,
+                                React.createElement("p", { className: "text-xs font-black text-slate-800" }, item),
+                                React.createElement("p", { className: "mt-1 text-[10px] font-bold text-slate-500" },
+                                    "\u95A2\u9023\u30BF\u30B9\u30AF\uFF1A",
+                                    (analysis?.tasks || JOB_TEMPLATES[templateKey].tasks)[idx % (analysis?.tasks || JOB_TEMPLATES[templateKey].tasks).length]?.name)),
+                            React.createElement(Pill, { tone: flowStatus.complete ? "green" : "slate" }, flowStatus.complete ? "確認済み" : "確認待ち")))))),
+                    React.createElement("div", { className: "space-y-5" },
+                        React.createElement("div", { className: "p-6 rounded-[28px] bg-blue-50 border border-blue-100" },
+                            React.createElement("p", { className: "text-sm font-black text-slate-800 mb-2" }, "\u53D7\u5165\u5074\u306E\u632F\u308A\u8FD4\u308A"),
+                            React.createElement("textarea", { className: "w-full h-24 p-4 rounded-2xl border border-blue-100 bg-white text-sm font-bold outline-none", defaultValue: `成果物は目的に沿っており、${currentLearningOutcome.outcomeUse}` })),
+                        React.createElement("div", { className: "p-6 rounded-[28px] bg-green-50 border border-green-100" },
+                            React.createElement("p", { className: "text-sm font-black text-slate-800 mb-2" }, "\u53C2\u52A0\u5074\u306E\u632F\u308A\u8FD4\u308A"),
+                            React.createElement("textarea", { className: "w-full h-24 p-4 rounded-2xl border border-green-100 bg-white text-sm font-bold outline-none", defaultValue: "\u696D\u52D9\u306E\u76EE\u7684\u3068\u6210\u679C\u7269\u304C\u660E\u78BA\u3060\u3063\u305F\u305F\u3081\u3001\u9650\u3089\u308C\u305F\u6642\u9593\u3067\u3082\u9032\u3081\u65B9\u3092\u78BA\u8A8D\u3057\u3084\u3059\u304B\u3063\u305F\u3002" })))),
+                React.createElement("div", { className: "space-y-8" },
+                    React.createElement(SectionCard, { title: "\u3053\u306E\u30ED\u30FC\u30EB\u3067\u78BA\u8A8D\u3067\u304D\u308B\u60C5\u5831", icon: Eye },
+                        React.createElement("p", { className: "text-sm font-bold text-slate-600 leading-relaxed mb-6" }, "\u696D\u52D9\u62C5\u5F53\u8005\u30FB\u8CAC\u4EFB\u8005\u5074\u3067\u306F\u3001\u6210\u679C\u7269\u3068\u30D7\u30ED\u30B8\u30A7\u30AF\u30C8\u5168\u4F53\u306E\u78BA\u8A8D\u306B\u5FC5\u8981\u306A\u60C5\u5831\u3060\u3051\u3092\u8868\u793A\u3057\u307E\u3059\u3002"),
+                        React.createElement("div", { className: "space-y-3" }, ["成果物概要", "完了記録", "プロジェクト全体の振り返り", "記録CSV出力"].map((label) => (React.createElement("div", { key: label, className: "flex items-center justify-between rounded-2xl bg-slate-50 border border-slate-100 px-4 py-3" },
+                            React.createElement("span", { className: "text-xs font-black text-slate-700" }, label),
+                            React.createElement(Pill, { tone: "green" }, "\u8868\u793A")))))),
+                    React.createElement(SectionCard, { title: "\u8868\u793A\u3057\u306A\u3044\u60C5\u5831", icon: Lock },
+                        React.createElement("div", { className: "rounded-[28px] bg-slate-50 border border-slate-100 p-8 text-center" },
+                            React.createElement(Lock, { size: 44, className: "mx-auto text-slate-300 mb-4" }),
+                            React.createElement("p", { className: "text-sm font-black text-slate-800" }, "\u500B\u4EBA\u306E\u5B66\u7FD2\u30FB\u30AD\u30E3\u30EA\u30A2\u60C5\u5831\u306F\u8868\u793A\u3057\u307E\u305B\u3093\u3002"),
+                            React.createElement("p", { className: "mt-2 text-xs font-bold text-slate-500 leading-relaxed" }, "\u73FE\u72B6\u30B9\u30AD\u30EB\u3001\u76EE\u6A19\u30AD\u30E3\u30EA\u30A2\u3001\u30B9\u30AD\u30EB\u30AE\u30E3\u30C3\u30D7\u3001\u6559\u6750\u63D0\u6848\u3001\u30B9\u30AD\u30EB\u30A2\u30C3\u30D7\u3067\u304D\u308B\u696D\u52D9\u306F\u3001\u53C2\u52A0\u8005\u672C\u4EBA\u306E\u307F\u304C\u78BA\u8A8D\u3057\u307E\u3059\u3002"))),
+                    React.createElement(SectionCard, { title: "\u78BA\u8A8D\u30B3\u30E1\u30F3\u30C8", icon: History },
+                        React.createElement("div", { className: "space-y-4" },
+                            React.createElement("div", { className: "rounded-2xl bg-slate-50 border border-slate-100 p-5" },
+                                React.createElement("p", { className: "text-xs font-black text-slate-400" }, "\u6210\u679C\u7269\u306E\u4F7F\u3044\u65B9"),
+                                React.createElement("p", { className: "mt-1 text-sm font-black text-slate-800" }, currentLearningOutcome.outcomeUse)),
+                            React.createElement("div", { className: "rounded-2xl bg-slate-50 border border-slate-100 p-5" },
+                                React.createElement("p", { className: "text-xs font-black text-slate-400" }, "\u611F\u8B1D\u30FB\u5B9F\u7528\u30B3\u30E1\u30F3\u30C8"),
+                                React.createElement("p", { className: "mt-1 text-sm font-black text-slate-800" }, currentLearningOutcome.thanks)))),
+                    React.createElement("button", { className: "w-full py-4 rounded-2xl bg-[#003366] text-white text-xs font-black flex items-center justify-center gap-2" },
+                        React.createElement(Download, { size: 15 }),
+                        " \u6210\u679C\u7269\u30FB\u5B8C\u4E86\u8A18\u9332\u3092CSV\u51FA\u529B"))))))),
+        React.createElement("div", { className: "fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-8 bg-white/95 backdrop-blur-xl px-12 py-6 rounded-[40px] shadow-[0_30px_100px_-15px_rgba(0,0,0,0.3)] border border-slate-200 z-[100]" },
+            React.createElement("div", { className: "flex items-center gap-4 border-r pr-10" },
+                React.createElement("div", { className: `p-2.5 rounded-xl text-white ${isReceiverSide ? "bg-[#003366]" : isSender ? "bg-green-500" : "bg-amber-500"}` },
+                    React.createElement(UserCog, { size: 24 })),
+                React.createElement("div", { className: "flex flex-col" },
+                    React.createElement("span", { className: "text-[9px] font-black text-slate-400 uppercase tracking-widest" }, "\u8868\u793A\u30ED\u30FC\u30EB\u5207\u66FF"),
+                    React.createElement("select", { value: viewerRole, onChange: (e) => setViewerRole(e.target.value), className: `text-sm font-black bg-transparent outline-none cursor-pointer ${isReceiverSide ? "text-[#003366]" : isSender ? "text-green-600" : "text-amber-600"}` }, ROLE_OPTIONS.map((opt) => React.createElement("option", { key: opt.value, value: opt.value }, opt.label))))),
+            React.createElement("div", { className: "flex items-center gap-4" },
+                React.createElement("div", { className: "relative flex items-center justify-center" },
+                    React.createElement("div", { className: "w-4 h-4 rounded-full bg-green-500 animate-ping absolute opacity-20" }),
+                    React.createElement("div", { className: "w-4 h-4 rounded-full bg-green-500 relative shadow-[0_0_10px_#22c55e]" })),
+                React.createElement("div", { className: "flex flex-col" },
+                    React.createElement("span", { className: "text-[9px] font-black text-slate-400 uppercase tracking-widest" }, "\u64CD\u4F5C\u72B6\u6CC1"),
+                    React.createElement("span", { className: "text-xs font-black text-slate-600 uppercase tracking-tighter" }, "\u64CD\u4F5C\u30C7\u30E2\u4E2D"))))));
 }
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App, null));
 
-try {
-  ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
-} catch (error) {
-  console.error(error);
-  const root = document.getElementById("root");
-  root.innerHTML = `
-    <div style="max-width:900px;margin:40px auto;padding:24px;background:#fff;border:1px solid #fecaca;border-radius:16px;font-family:'Yu Gothic UI','Noto Sans JP',sans-serif;color:#7f1d1d;">
-      <h2 style="font-size:18px;font-weight:800;margin:0 0 12px;">画面の読み込みでエラーが発生しました</h2>
-      <p style="font-size:14px;line-height:1.7;margin:0;">${String(error && error.message ? error.message : error)}</p>
-    </div>`;
-}
+  } catch (error) {
+    console.error(error);
+    root.innerHTML =
+      '<div class="boot-error">モックアップの起動に失敗しました。<br>エラー内容：' +
+      String(error && error.message ? error.message : error).replace(/[<>&"]/g, function(c) {
+        return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];
+      }) +
+      '</div>';
+  }
+})();
 </script>
+
 </body>
 </html>

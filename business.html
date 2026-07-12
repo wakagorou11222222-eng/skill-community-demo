@@ -7,7 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.383.0/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 <style>
   body { font-family: "Yu Gothic UI","Noto Sans JP",sans-serif; }
@@ -26,19 +26,43 @@
 
 <div id="root"></div>
 
-<script type="text/babel">
+<script type="text/babel" data-presets="env,react">
 const { useMemo, useState } = React;
 
 // lucide icons from UMD
 const makeIcon = (name) => {
-  const icons = lucide;
   return ({ size = 24, className = "" }) => {
+    const icons = (typeof window !== "undefined" && window.lucide) ? window.lucide : {};
     const el = icons[name];
-    if (!el) return null;
+
+    // Lucide CDNが一時的に読めない場合でも、画面全体を止めないフォールバック。
+    if (!Array.isArray(el)) {
+      return React.createElement(
+        "svg",
+        {
+          width: size,
+          height: size,
+          viewBox: "0 0 24 24",
+          fill: "none",
+          stroke: "currentColor",
+          strokeWidth: 2,
+          strokeLinecap: "round",
+          strokeLinejoin: "round",
+          className,
+          style: { display: "inline-block", verticalAlign: "middle" },
+          "aria-hidden": "true"
+        },
+        React.createElement("circle", { cx: 12, cy: 12, r: 9 }),
+        React.createElement("path", { d: "M8 12h8" }),
+        React.createElement("path", { d: "M12 8v8" })
+      );
+    }
+
     const [tag, attrs, children] = el;
     const svgAttrs = {
       ...attrs,
-      width: size, height: size,
+      width: size,
+      height: size,
       className,
       style: { display: "inline-block", verticalAlign: "middle" }
     };
@@ -170,7 +194,7 @@ const SectionCard = ({ title, children, icon: Icon }) => (
   </div>
 );
 
-export default function App() {
+function App() {
   const [activeTab, setActiveTab] = useState("input");
   const [viewerRole, setViewerRole] = useState("receiver");
   const [templateKey, setTemplateKey] = useState("issue");
@@ -639,7 +663,17 @@ export default function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+try {
+  ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+} catch (error) {
+  console.error(error);
+  const root = document.getElementById("root");
+  root.innerHTML = `
+    <div style="max-width:900px;margin:40px auto;padding:24px;background:#fff;border:1px solid #fecaca;border-radius:16px;font-family:'Yu Gothic UI','Noto Sans JP',sans-serif;color:#7f1d1d;">
+      <h2 style="font-size:18px;font-weight:800;margin:0 0 12px;">画面の読み込みでエラーが発生しました</h2>
+      <p style="font-size:14px;line-height:1.7;margin:0;">${String(error && error.message ? error.message : error)}</p>
+    </div>`;
+}
 </script>
 </body>
 </html>
